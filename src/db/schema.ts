@@ -228,3 +228,25 @@ export const corrections = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
 );
+
+/* ------------------------------------------------------------------ */
+/*  Assistant pédagogique IA (lié au compte de l'étudiant)            */
+/* ------------------------------------------------------------------ */
+
+export type AiMessageRole = "user" | "assistant";
+
+export const aiConversations = pgTable("ai_conversations", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull(),
+  title: text("title").notNull().default("Nouvelle conversation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiMessages = pgTable("ai_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+    role: text("role").notNull().$type<AiMessageRole>(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

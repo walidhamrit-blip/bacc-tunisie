@@ -25,7 +25,7 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <p className="eyebrow mb-3">S'entraîner</p>
+          <p className="eyebrow mb-3">S&apos;entraîner</p>
           <ul className="space-y-2 text-sm text-[var(--ink-soft)]">
             <li><Link className="hover:text-[var(--brand)]" href="/quiz">Quiz interactifs</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/correction">Corriger un PDF d&apos;exercices</Link></li>
