@@ -1577,7 +1577,17 @@ const gestionCompteResultat: LessonSeed = {
 };
 
 export const extraLessons: LessonSeed[] = [
+  /* SVT */
+  svtReproduction,
+  svtVegetal,
+  /* Informatique */
+  infoAlgoAvance,
+  /* Philosophie */
+  philoTravail,
+  philoEtat,
+  philoConscience,
   /* Arabe */
+  arabeArgumentatif,
   arabeGrammaire,
   /* Français */
   francaisTheatre,
