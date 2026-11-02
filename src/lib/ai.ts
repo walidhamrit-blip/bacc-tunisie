@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { supabase as sb } from "@/db";
 import { aiConversations, aiMessages, students } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { getStudent, listLessons } from "@/lib/data";
@@ -160,48 +160,58 @@ export async function getOrCreateStudent() {
 }
 
 export async function listConversations(studentId: number) {
-  return db
-    .select()
-    .from(aiConversations)
-    .where(eq(aiConversations.studentId, studentId))
-    .orderBy(desc(aiConversations.updatedAt));
+  const { data, error } = await sb
+    .from("ai_conversations")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function createConversation(studentId: number, title: string) {
-  const [row] = await db
-    .insert(aiConversations)
-    .values({ studentId, title })
-    .returning();
-  return row;
+  const { data, error } = await sb
+    .from("ai_conversations")
+    .insert({ student_id: studentId, title })
+    .select()
+    .limit(1);
+  if (error) throw error;
+  return data?.[0];
 }
 
 export async function getConversation(id: number, studentId: number) {
-  const rows = await db
-    .select()
-    .from(aiConversations)
-    .where(and(eq(aiConversations.id, id), eq(aiConversations.studentId, studentId)))
+  const { data, error } = await sb
+    .from("ai_conversations")
+    .select("*")
+    .eq("id", id)
+    .eq("student_id", studentId)
     .limit(1);
-  return rows[0] ?? null;
+  if (error) throw error;
+  return data?.[0] ?? null;
 }
 
 export async function addMessage(conversationId: number, role: "user" | "assistant", content: string) {
-  const [row] = await db
-    .insert(aiMessages)
-    .values({ conversationId, role, content })
-    .returning();
-  await db
-    .update(aiConversations)
-    .set({ updatedAt: new Date() })
-    .where(eq(aiConversations.id, conversationId));
-  return row;
+  const { data, error } = await sb
+    .from("ai_messages")
+    .insert({ conversation_id: conversationId, role, content })
+    .select()
+    .limit(1);
+  if (error) throw error;
+  await sb
+    .from("ai_conversations")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", conversationId);
+  return data?.[0];
 }
 
 export async function getMessages(conversationId: number) {
-  return db
-    .select()
-    .from(aiMessages)
-    .where(eq(aiMessages.conversationId, conversationId))
-    .orderBy(aiMessages.createdAt);
+  const { data, error } = await sb
+    .from("ai_messages")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function ensureConversation(studentId: number, conversationId: number | null) {
@@ -209,7 +219,8 @@ export async function ensureConversation(studentId: number, conversationId: numb
     const existing = await getConversation(conversationId, studentId);
     if (existing) return existing;
   }
-  const [student] = await db.select().from(students).limit(1);
+  const { data: studentRows } = await sb.from("students").select("*").limit(1);
+  const student = studentRows?.[0];
   const target = student ?? (await getOrCreateStudent());
   return createConversation(target.id, "Nouvelle conversation");
 }

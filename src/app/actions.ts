@@ -1,18 +1,10 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db } from "@/db";
-import {
-  corrections,
-  examProgress,
-  exerciseProgress,
-  lessonProgress,
-  quizAttempts,
-  students,
-} from "@/db/schema";
-import { getStudent } from "@/lib/data";
+import { createAdminClient } from "@/lib/supabase";
 import { normalizeSection } from "@/lib/sections";
+
+const sb = createAdminClient();
 
 export async function toggleProgress(formData: FormData) {
   const kind = String(formData.get("kind") ?? "");
@@ -23,50 +15,56 @@ export async function toggleProgress(formData: FormData) {
   const student = await getStudent();
 
   if (kind === "lesson") {
-    const existing = await db
-      .select({ id: lessonProgress.id })
-      .from(lessonProgress)
-      .where(and(eq(lessonProgress.studentId, student.id), eq(lessonProgress.lessonSlug, slug)))
+    const { data: existing } = await sb
+      .from("lesson_progress")
+      .select("id")
+      .eq("student_id", student.id)
+      .eq("lesson_slug", slug)
       .limit(1);
-    if (existing.length > 0) {
-      await db.delete(lessonProgress).where(eq(lessonProgress.id, existing[0].id));
+    if (existing && existing.length > 0) {
+      await sb.from("lesson_progress").delete().eq("id", existing[0].id);
     } else {
-      await db
-        .insert(lessonProgress)
-        .values({ studentId: student.id, lessonSlug: slug, subjectSlug })
-        .onConflictDoNothing();
+      await sb.from("lesson_progress").insert({
+        student_id: student.id,
+        lesson_slug: slug,
+        subject_slug: subjectSlug,
+      });
     }
   }
 
   if (kind === "exercise") {
-    const existing = await db
-      .select({ id: exerciseProgress.id })
-      .from(exerciseProgress)
-      .where(and(eq(exerciseProgress.studentId, student.id), eq(exerciseProgress.exerciseSlug, slug)))
+    const { data: existing } = await sb
+      .from("exercise_progress")
+      .select("id")
+      .eq("student_id", student.id)
+      .eq("exercise_slug", slug)
       .limit(1);
-    if (existing.length > 0) {
-      await db.delete(exerciseProgress).where(eq(exerciseProgress.id, existing[0].id));
+    if (existing && existing.length > 0) {
+      await sb.from("exercise_progress").delete().eq("id", existing[0].id);
     } else {
-      await db
-        .insert(exerciseProgress)
-        .values({ studentId: student.id, exerciseSlug: slug, subjectSlug })
-        .onConflictDoNothing();
+      await sb.from("exercise_progress").insert({
+        student_id: student.id,
+        exercise_slug: slug,
+        subject_slug: subjectSlug,
+      });
     }
   }
 
   if (kind === "exam") {
-    const existing = await db
-      .select({ id: examProgress.id })
-      .from(examProgress)
-      .where(and(eq(examProgress.studentId, student.id), eq(examProgress.examSlug, slug)))
+    const { data: existing } = await sb
+      .from("exam_progress")
+      .select("id")
+      .eq("student_id", student.id)
+      .eq("exam_slug", slug)
       .limit(1);
-    if (existing.length > 0) {
-      await db.delete(examProgress).where(eq(examProgress.id, existing[0].id));
+    if (existing && existing.length > 0) {
+      await sb.from("exam_progress").delete().eq("id", existing[0].id);
     } else {
-      await db
-        .insert(examProgress)
-        .values({ studentId: student.id, examSlug: slug, subjectSlug })
-        .onConflictDoNothing();
+      await sb.from("exam_progress").insert({
+        student_id: student.id,
+        exam_slug: slug,
+        subject_slug: subjectSlug,
+      });
     }
   }
 
@@ -78,10 +76,10 @@ export async function recordQuizAttempt(quizSlug: string, subjectSlug: string, s
   const safeTotal = Math.max(1, Math.min(total, 60));
   const safeScore = Math.max(0, Math.min(score, safeTotal));
   const student = await getStudent();
-  await db.insert(quizAttempts).values({
-    studentId: student.id,
-    quizSlug,
-    subjectSlug,
+  await sb.from("quiz_attempts").insert({
+    student_id: student.id,
+    quiz_slug: quizSlug,
+    subject_slug: subjectSlug,
     score: safeScore,
     total: safeTotal,
   });
@@ -93,19 +91,30 @@ export async function updateStudentProfile(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
   const section = normalizeSection(String(formData.get("section") ?? ""));
   const student = await getStudent();
-  await db
-    .update(students)
-    .set({ name: name.length > 0 ? name : student.name, section })
-    .where(eq(students.id, student.id));
+  await sb
+    .from("students")
+    .update({ name: name.length > 0 ? name : student.name, section })
+    .eq("id", student.id);
   revalidatePath("/", "layout");
 }
 
 export async function resetStudentProgress() {
   const student = await getStudent();
-  await db.delete(lessonProgress).where(eq(lessonProgress.studentId, student.id));
-  await db.delete(exerciseProgress).where(eq(exerciseProgress.studentId, student.id));
-  await db.delete(examProgress).where(eq(examProgress.studentId, student.id));
-  await db.delete(quizAttempts).where(eq(quizAttempts.studentId, student.id));
-  await db.delete(corrections).where(eq(corrections.studentId, student.id));
+  await sb.from("lesson_progress").delete().eq("student_id", student.id);
+  await sb.from("exercise_progress").delete().eq("student_id", student.id);
+  await sb.from("exam_progress").delete().eq("student_id", student.id);
+  await sb.from("quiz_attempts").delete().eq("student_id", student.id);
+  await sb.from("corrections").delete().eq("student_id", student.id);
   revalidatePath("/", "layout");
+}
+
+async function getStudent() {
+  const { data } = await sb.from("students").select("*").limit(1);
+  if (data && data.length > 0) return data[0];
+  const { data: created } = await sb
+    .from("students")
+    .insert({ name: "Élève de bac", section: "Sciences expérimentales", is_demo: true })
+    .select()
+    .limit(1);
+  return created?.[0];
 }

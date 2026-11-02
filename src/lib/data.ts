@@ -1,19 +1,19 @@
-import { and, desc, eq, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { createAdminClient } from "@/lib/supabase";
 import {
-  corrections,
-  examProgress,
-  exams,
-  exerciseProgress,
-  exercises,
-  lessonProgress,
-  lessons,
-  quizAttempts,
-  quizzes,
   students,
   subjects,
+  lessons,
+  exercises,
+  exams,
+  quizzes,
+  corrections,
 } from "@/db/schema";
-import { ensureSeeded } from "@/db/seed";
+
+const sb = createAdminClient();
+
+/* ------------------------------------------------------------------ */
+/*  Types réexportés pour la compatibilité avec les pages             */
+/* ------------------------------------------------------------------ */
 
 export type Student = typeof students.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
@@ -21,6 +21,11 @@ export type Lesson = typeof lessons.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
+export type Correction = typeof corrections.$inferSelect;
+
+/* ------------------------------------------------------------------ */
+/*  Level helpers                                                     */
+/* ------------------------------------------------------------------ */
 
 export type LevelLabel = {
   label: string;
@@ -35,6 +40,128 @@ export function levelFromMastery(mastery: number): LevelLabel {
   if (mastery >= 20) return { label: "Fragile", tone: "amber", short: "Niveau 1" };
   return { label: "À démarrer", tone: "slate", short: "Niveau 0" };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Student                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function getStudent(): Promise<Student> {
+  const { data, error } = await sb.from("students").select("*").limit(1);
+  if (error) throw error;
+  if (data?.length > 0) return data[0] as Student;
+
+  const { data: created, error: insertError } = await sb
+    .from("students")
+    .insert({ name: "Élève de bac", section: "Sciences expérimentales", is_demo: true })
+    .select()
+    .limit(1);
+  if (insertError) throw insertError;
+  return created![0] as Student;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Subjects                                                          */
+/* ------------------------------------------------------------------ */
+
+export async function listSubjects(section?: string | null): Promise<Subject[]> {
+  let query = sb.from("subjects").select("*").order("order_index", { ascending: true });
+  if (section && section !== "Toutes les sections") {
+    // Supabase ne filtre pas sur un tableau JSON directement avec eq ;
+    // on récupère tout et on filtre en JS pour la simplicité.
+    const { data, error } = await sb.from("subjects").select("*").order("order_index", { ascending: true });
+    if (error) throw error;
+    return (data as Subject[]).filter((row) => row.sections.includes(section));
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Subject[];
+}
+
+export async function getSubject(slug: string): Promise<Subject | null> {
+  const { data, error } = await sb.from("subjects").select("*").eq("slug", slug).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Lessons                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function listLessons(subjectSlug?: string | null): Promise<Lesson[]> {
+  let query = sb.from("lessons").select("*");
+  if (subjectSlug) query = query.eq("subject_slug", subjectSlug);
+  query = query.order("order_index", { ascending: true });
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Lesson[];
+}
+
+export async function getLesson(slug: string): Promise<Lesson | null> {
+  const { data, error } = await sb.from("lessons").select("*").eq("slug", slug).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Exercises                                                         */
+/* ------------------------------------------------------------------ */
+
+export async function listExercises(subjectSlug?: string | null): Promise<Exercise[]> {
+  let query = sb.from("exercises").select("*");
+  if (subjectSlug) query = query.eq("subject_slug", subjectSlug);
+  query = query.order("difficulty", { ascending: true });
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Exercise[];
+}
+
+export async function getExercise(slug: string): Promise<Exercise | null> {
+  const { data, error } = await sb.from("exercises").select("*").eq("slug", slug).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Exams                                                             */
+/* ------------------------------------------------------------------ */
+
+export async function listExams(subjectSlug?: string | null): Promise<Exam[]> {
+  let query = sb.from("exams").select("*");
+  if (subjectSlug) query = query.eq("subject_slug", subjectSlug);
+  query = query.order("year", { ascending: true });
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Exam[];
+}
+
+export async function getExam(slug: string): Promise<Exam | null> {
+  const { data, error } = await sb.from("exams").select("*").eq("slug", slug).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Quizzes                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function listQuizzes(subjectSlug?: string | null): Promise<Quiz[]> {
+  let query = sb.from("quizzes").select("*");
+  if (subjectSlug) query = query.eq("subject_slug", subjectSlug);
+  query = query.order("id", { ascending: true });
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Quiz[];
+}
+
+export async function getQuiz(slug: string): Promise<Quiz | null> {
+  const { data, error } = await sb.from("quizzes").select("*").eq("slug", slug).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dashboard                                                         */
+/* ------------------------------------------------------------------ */
 
 export type SubjectLevel = {
   subject: Subject;
@@ -51,129 +178,73 @@ export type SubjectLevel = {
   level: LevelLabel;
 };
 
-export async function getStudent(): Promise<Student> {
-  await ensureSeeded();
-  const rows = await db.select().from(students).orderBy(students.id).limit(1);
-  if (rows.length > 0) return rows[0];
-  const [created] = await db
-    .insert(students)
-    .values({ name: "Élève de bac", section: "Sciences expérimentales" })
-    .returning();
-  return created;
-}
-
-export async function listSubjects(section?: string | null): Promise<Subject[]> {
-  await ensureSeeded();
-  const rows = await db.select().from(subjects).orderBy(subjects.orderIndex);
-  if (section && section !== "Toutes les sections") {
-    return rows.filter((row) => row.sections.includes(section));
-  }
-  return rows;
-}
-
-export async function getSubject(slug: string): Promise<Subject | null> {
-  await ensureSeeded();
-  const rows = await db.select().from(subjects).where(eq(subjects.slug, slug)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function listLessons(subjectSlug?: string | null): Promise<Lesson[]> {
-  await ensureSeeded();
-  const query = db.select().from(lessons);
-  const rows = subjectSlug
-    ? await query.where(eq(lessons.subjectSlug, subjectSlug)).orderBy(lessons.orderIndex)
-    : await query.orderBy(lessons.subjectSlug, lessons.orderIndex);
-  return rows;
-}
-
-export async function getLesson(slug: string): Promise<Lesson | null> {
-  await ensureSeeded();
-  const rows = await db.select().from(lessons).where(eq(lessons.slug, slug)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function listExercises(subjectSlug?: string | null): Promise<Exercise[]> {
-  await ensureSeeded();
-  const query = db.select().from(exercises);
-  return subjectSlug
-    ? await query.where(eq(exercises.subjectSlug, subjectSlug)).orderBy(exercises.difficulty)
-    : await query.orderBy(exercises.subjectSlug, exercises.difficulty);
-}
-
-export async function getExercise(slug: string): Promise<Exercise | null> {
-  await ensureSeeded();
-  const rows = await db.select().from(exercises).where(eq(exercises.slug, slug)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function listExams(subjectSlug?: string | null): Promise<Exam[]> {
-  await ensureSeeded();
-  const query = db.select().from(exams);
-  return subjectSlug
-    ? await query.where(eq(exams.subjectSlug, subjectSlug)).orderBy(exams.year)
-    : await query.orderBy(exams.subjectSlug, exams.year);
-}
-
-export async function getExam(slug: string): Promise<Exam | null> {
-  await ensureSeeded();
-  const rows = await db.select().from(exams).where(eq(exams.slug, slug)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function listQuizzes(subjectSlug?: string | null): Promise<Quiz[]> {
-  await ensureSeeded();
-  const query = db.select().from(quizzes);
-  return subjectSlug
-    ? await query.where(eq(quizzes.subjectSlug, subjectSlug)).orderBy(quizzes.id)
-    : await query.orderBy(quizzes.subjectSlug, quizzes.id);
-}
-
-export async function getQuiz(slug: string): Promise<Quiz | null> {
-  await ensureSeeded();
-  const rows = await db.select().from(quizzes).where(eq(quizzes.slug, slug)).limit(1);
-  return rows[0] ?? null;
-}
-
 export async function getDashboard() {
   const student = await getStudent();
+
   const [subjectRows, lessonRows, exerciseRows, examRows, quizRows] = await Promise.all([
-    db.select().from(subjects).orderBy(subjects.orderIndex),
-    db.select({ slug: lessons.slug, subjectSlug: lessons.subjectSlug }).from(lessons),
-    db.select({ slug: exercises.slug, subjectSlug: exercises.subjectSlug }).from(exercises),
-    db.select({ slug: exams.slug, subjectSlug: exams.subjectSlug }).from(exams),
-    db.select({ slug: quizzes.slug, subjectSlug: quizzes.subjectSlug, title: quizzes.title }).from(quizzes),
+    sb.from("subjects").select("*").order("order_index", { ascending: true }),
+    sb.from("lessons").select("slug, subject_slug"),
+    sb.from("exercises").select("slug, subject_slug"),
+    sb.from("exams").select("slug, subject_slug"),
+    sb.from("quizzes").select("slug, subject_slug, title"),
   ]);
+
+  if (subjectRows.error) throw subjectRows.error;
+  if (lessonRows.error) throw lessonRows.error;
+  if (exerciseRows.error) throw exerciseRows.error;
+  if (examRows.error) throw examRows.error;
+  if (quizRows.error) throw quizRows.error;
 
   const [doneLessons, doneExercises, doneExams, attempts] = await Promise.all([
-    db.select().from(lessonProgress).where(eq(lessonProgress.studentId, student.id)),
-    db.select().from(exerciseProgress).where(eq(exerciseProgress.studentId, student.id)),
-    db.select().from(examProgress).where(eq(examProgress.studentId, student.id)),
-    db
-      .select()
-      .from(quizAttempts)
-      .where(eq(quizAttempts.studentId, student.id))
-      .orderBy(desc(quizAttempts.createdAt)),
+    sb.from("lesson_progress").select("*").eq("student_id", student.id),
+    sb.from("exercise_progress").select("*").eq("student_id", student.id),
+    sb.from("exam_progress").select("*").eq("student_id", student.id),
+    sb.from("quiz_attempts").select("*").eq("student_id", student.id).order("created_at", { ascending: false }),
   ]);
 
-  const relevantSubjects = subjectRows.filter(
-    (subject) => subject.sections.includes(student.section) || student.section === "",
+  if (doneLessons.error) throw doneLessons.error;
+  if (doneExercises.error) throw doneExercises.error;
+  if (doneExams.error) throw doneExams.error;
+  if (attempts.error) throw attempts.error;
+
+  const lessonsDoneMap = new Map<string, number>();
+  for (const row of (doneLessons.data ?? [])) {
+    lessonsDoneMap.set((row as any).lesson_slug, 1);
+  }
+  const exercisesDoneMap = new Map<string, number>();
+  for (const row of (doneExercises.data ?? [])) {
+    exercisesDoneMap.set((row as any).exercise_slug, 1);
+  }
+  const examsDoneMap = new Map<string, number>();
+  for (const row of (doneExams.data ?? [])) {
+    examsDoneMap.set((row as any).exam_slug, 1);
+  }
+
+  const relevantSubjects = (subjectRows.data as Subject[]).filter(
+    (subject) => subject.sections.includes(student.section)
   );
-  const finalSubjects = relevantSubjects.length > 0 ? relevantSubjects : subjectRows;
+  const finalSubjects = relevantSubjects.length > 0 ? relevantSubjects : (subjectRows.data as Subject[]);
 
   const subjectLevels: SubjectLevel[] = finalSubjects.map((subject) => {
-    const lTotal = lessonRows.filter((row) => row.subjectSlug === subject.slug).length;
-    const eTotal = exerciseRows.filter((row) => row.subjectSlug === subject.slug).length;
-    const xTotal = examRows.filter((row) => row.subjectSlug === subject.slug).length;
-    const lDone = doneLessons.filter((row) => row.subjectSlug === subject.slug).length;
-    const eDone = doneExercises.filter((row) => row.subjectSlug === subject.slug).length;
-    const xDone = doneExams.filter((row) => row.subjectSlug === subject.slug).length;
-    const subjectAttempts = attempts.filter((row) => row.subjectSlug === subject.slug);
+    const lTotal = (lessonRows.data as any[]).filter((row: any) => row.subject_slug === subject.slug).length;
+    const eTotal = (exerciseRows.data as any[]).filter((row: any) => row.subject_slug === subject.slug).length;
+    const xTotal = (examRows.data as any[]).filter((row: any) => row.subject_slug === subject.slug).length;
+    const lDone = (lessonRows.data as any[]).filter(
+      (row: any) => row.subject_slug === subject.slug && lessonsDoneMap.has(row.slug)
+    ).length;
+    const eDone = (exerciseRows.data as any[]).filter(
+      (row: any) => row.subject_slug === subject.slug && exercisesDoneMap.has(row.slug)
+    ).length;
+    const xDone = (examRows.data as any[]).filter(
+      (row: any) => row.subject_slug === subject.slug && examsDoneMap.has(row.slug)
+    ).length;
+    const subjectAttempts = ((attempts.data ?? []) as any[]).filter((row: any) => row.subject_slug === subject.slug);
     const quizAverage =
       subjectAttempts.length > 0
         ? Math.round(
             (subjectAttempts.reduce((sum, row) => sum + row.score / Math.max(row.total, 1), 0) /
               subjectAttempts.length) *
-              100,
+              100
           )
         : null;
     const totalItems = lTotal + eTotal + xTotal;
@@ -201,7 +272,7 @@ export async function getDashboard() {
   });
 
   const tracked = subjectLevels.filter(
-    (row) => row.lessonsTotal + row.exercisesTotal + row.examsTotal > 0,
+    (row) => row.lessonsTotal + row.exercisesTotal + row.examsTotal > 0
   );
   const overallMastery =
     tracked.length > 0
@@ -213,14 +284,16 @@ export async function getDashboard() {
   const strongest = sorted[sorted.length - 1] ?? null;
   const subjectsWithContent = tracked.filter((row) => row.lessonsTotal > 0);
   const notStarted = subjectsWithContent.filter(
-    (row) => row.lessonsDone === 0 && row.quizCount === 0 && row.exercisesDone === 0,
+    (row) => row.lessonsDone === 0 && row.quizCount === 0 && row.exercisesDone === 0
   );
   const nextQuiz = weakest
-    ? quizRows.find((row) => row.subjectSlug === weakest.subject.slug) ?? null
+    ? (quizRows.data as any[]).find((row: any) => row.subject_slug === weakest.subject.slug) ?? null
     : null;
 
-  const totalAttemptScore = attempts.reduce((sum, row) => sum + row.score, 0);
-  const totalAttemptQuestions = attempts.reduce((sum, row) => sum + row.total, 0);
+  const totalAttemptScore = ((attempts.data ?? []) as any[]).reduce((sum, row) => sum + row.score, 0);
+  const totalAttemptQuestions = ((attempts.data ?? []) as any[]).reduce((sum, row) => sum + row.total, 0);
+
+  const { count } = await sb.from("corrections").select("*", { count: "exact", head: true }).eq("student_id", student.id);
 
   return {
     student,
@@ -233,76 +306,88 @@ export async function getDashboard() {
     notStarted,
     nextQuiz,
     stats: {
-      lessonsDone: doneLessons.length,
-      exercisesDone: doneExercises.length,
-      examsDone: doneExams.length,
-      quizCount: attempts.length,
+      lessonsDone: (doneLessons.data ?? []).length,
+      exercisesDone: (doneExercises.data ?? []).length,
+      examsDone: (doneExams.data ?? []).length,
+      quizCount: ((attempts.data ?? []) as any[]).length,
       quizSuccess:
         totalAttemptQuestions > 0 ? Math.round((totalAttemptScore / totalAttemptQuestions) * 100) : null,
-      corrections: (
-        await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(corrections)
-          .where(eq(corrections.studentId, student.id))
-      )[0].count,
+      corrections: count ?? 0,
     },
-    recentAttempts: attempts.slice(0, 6),
+    recentAttempts: ((attempts.data ?? []) as any[]).slice(0, 6),
   };
 }
 
+/* ------------------------------------------------------------------ */
+/*  Progress helpers                                                  */
+/* ------------------------------------------------------------------ */
+
 export async function getStudentLessonSlugs(studentId: number): Promise<Set<string>> {
-  const rows = await db
-    .select({ slug: lessonProgress.lessonSlug })
-    .from(lessonProgress)
-    .where(eq(lessonProgress.studentId, studentId));
-  return new Set(rows.map((row) => row.slug));
+  const { data } = await sb.from("lesson_progress").select("lesson_slug").eq("student_id", studentId);
+  return new Set(((data ?? []) as any[]).map((row) => row.lesson_slug));
 }
 
 export async function getStudentExerciseSlugs(studentId: number): Promise<Set<string>> {
-  const rows = await db
-    .select({ slug: exerciseProgress.exerciseSlug })
-    .from(exerciseProgress)
-    .where(eq(exerciseProgress.studentId, studentId));
-  return new Set(rows.map((row) => row.slug));
+  const { data } = await sb.from("exercise_progress").select("exercise_slug").eq("student_id", studentId);
+  return new Set(((data ?? []) as any[]).map((row) => row.exercise_slug));
 }
 
 export async function getStudentExamSlugs(studentId: number): Promise<Set<string>> {
-  const rows = await db
-    .select({ slug: examProgress.examSlug })
-    .from(examProgress)
-    .where(eq(examProgress.studentId, studentId));
-  return new Set(rows.map((row) => row.slug));
+  const { data } = await sb.from("exam_progress").select("exam_slug").eq("student_id", studentId);
+  return new Set(((data ?? []) as any[]).map((row) => row.exam_slug));
 }
+
+/* ------------------------------------------------------------------ */
+/*  Corrections                                                       */
+/* ------------------------------------------------------------------ */
 
 export async function listCorrections() {
   const student = await getStudent();
-  return db
-    .select()
-    .from(corrections)
-    .where(eq(corrections.studentId, student.id))
-    .orderBy(desc(corrections.createdAt))
+  const { data, error } = await sb
+    .from("corrections")
+    .select("*")
+    .eq("student_id", student.id)
+    .order("created_at", { ascending: false })
     .limit(20);
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function getCorrection(id: number) {
   const student = await getStudent();
-  const rows = await db
-    .select()
-    .from(corrections)
-    .where(and(eq(corrections.id, id), eq(corrections.studentId, student.id)))
+  const { data, error } = await sb
+    .from("corrections")
+    .select("*")
+    .eq("id", id)
+    .eq("student_id", student.id)
     .limit(1);
-  return rows[0] ?? null;
+  if (error) throw error;
+  return data?.[0] ?? null;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Quiz best scores                                                  */
+/* ------------------------------------------------------------------ */
+
 export async function getBestQuizScores(studentId: number) {
-  const rows = await db
-    .select({
-      quizSlug: quizAttempts.quizSlug,
-      best: sql<number>`max(round(100.0 * ${quizAttempts.score} / greatest(${quizAttempts.total}, 1)))::int`,
-      attempts: sql<number>`count(*)::int`,
-    })
-    .from(quizAttempts)
-    .where(eq(quizAttempts.studentId, studentId))
-    .groupBy(quizAttempts.quizSlug);
-  return new Map(rows.map((row) => [row.quizSlug, row]));
+  const { data, error } = await sb
+    .from("quiz_attempts")
+    .select("quiz_slug, score, total")
+    .eq("student_id", studentId);
+  if (error) throw error;
+
+  const map = new Map<string, { best: number; attempts: number }>();
+  const byQuiz = new Map<string, any[]>();
+  for (const row of (data ?? [])) {
+    const arr = byQuiz.get(row.quiz_slug) ?? [];
+    arr.push(row);
+    byQuiz.set(row.quiz_slug, arr);
+  }
+  for (const [quizSlug, rows] of byQuiz) {
+    const best = Math.round(
+      (Math.max(...rows.map((r) => r.score / Math.max(r.total, 1)))) * 100
+    );
+    map.set(quizSlug, { best, attempts: rows.length });
+  }
+  return map;
 }

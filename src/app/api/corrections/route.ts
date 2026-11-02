@@ -1,5 +1,4 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { supabase as sb } from "@/db";
 import { corrections, exams, exercises, lessons, quizzes } from "@/db/schema";
 import { analyzeSheet, enhanceWithAi, type AnalysisInput } from "@/lib/analysis";
 import { getStudent, getSubject } from "@/lib/data";
@@ -61,15 +60,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const [lessonRows, exerciseRows, examRows, quizRows] = await Promise.all([
-      db.select().from(lessons).where(eq(lessons.subjectSlug, subject.slug)),
-      db.select().from(exercises).where(eq(exercises.subjectSlug, subject.slug)),
-      db.select().from(exams).where(eq(exams.subjectSlug, subject.slug)),
-      db
-        .select({ slug: quizzes.slug, title: quizzes.title, questions: quizzes.questions })
-        .from(quizzes)
-        .where(eq(quizzes.subjectSlug, subject.slug)),
-    ]);
+    const lessonRes = await sb.from("lessons").select("*").eq("subject_slug", subject.slug);
+    const exerciseRes = await sb.from("exercises").select("*").eq("subject_slug", subject.slug);
+    const examRes = await sb.from("exams").select("*").eq("subject_slug", subject.slug);
+    const quizRes = await sb.from("quizzes").select("slug, title, questions").eq("subject_slug", subject.slug);
+    const lessonRows = lessonRes.data ?? [];
+    const exerciseRows = exerciseRes.data ?? [];
+    const examRows = examRes.data ?? [];
+    const quizRows = quizRes.data ?? [];
 
     const input: AnalysisInput = {
       text: sourceText,
@@ -88,23 +86,23 @@ export async function POST(request: Request) {
     analysis.warnings = [...warnings, ...analysis.warnings];
 
     const student = await getStudent();
-    const [saved] = await db
-      .insert(corrections)
-      .values({
-        studentId: student.id,
-        subjectSlug: subject.slug,
+    const { data: saved } = await sb
+      .from("corrections")
+      .insert({
+        student_id: student.id,
+        subject_slug: subject.slug,
         section,
-        fileName,
-        fileSize,
-        pageCount,
-        sourceText: sourceText.slice(0, 30000),
+        file_name: fileName,
+        file_size: fileSize,
+        page_count: pageCount,
+        source_text: sourceText.slice(0, 30000),
         instruction,
         status: "analysé",
         analysis,
       })
-      .returning({ id: corrections.id });
+      .select("id");
 
-    return Response.json({ id: saved.id });
+    return Response.json({ id: saved?.[0]?.id });
   } catch (error) {
     console.error("correction error", error);
     return Response.json(
