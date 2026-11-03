@@ -79,21 +79,26 @@ const withPWA = withPWAInit({
   },
 });
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  ...(process.env.VERCEL === "1"
+    ? [{ key: "X-Frame-Options", value: "SAMEORIGIN" }]
+    : []),
+];
+
 const nextConfig: NextConfig = {
   // `pg` doit rester en dehors du bundle serveur : sinon les sockets natifs
   // cassent sur le runtime Node de Vercel.
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
+  allowedDevOrigins: ["*.e2b.app"],
   turbopack: {},
   async headers() {
     return [
       {
         source: "/:path*",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-        ],
+        headers: securityHeaders,
       },
       {
         source: "/sw.js",
