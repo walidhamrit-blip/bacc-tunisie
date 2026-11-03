@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { subjectSeeds } from "@/db/content/subjects";
 import { lessonsSeed } from "@/db/content/lessons-humanities";
+import { lessonProgramMeta } from "@/db/content/program";
 import { exercisesSeed } from "@/db/content/exercises";
 import { examsSeed } from "@/db/content/exams";
 import { quizzesSeed } from "@/db/content/quizzes";
@@ -71,7 +72,18 @@ async function doSeed() {
       await db.insert(subjects).values(subjectSeeds).onConflictDoNothing();
     }
 
-    await chunkedInsert(lessonsSeed, 4, (batch) =>
+    // Trimestre officiel + filières concernées, dérivés du programme des 7 sections.
+    const programMeta = lessonProgramMeta();
+    const lessonsRows = lessonsSeed.map((lesson) => {
+      const meta = programMeta.get(lesson.slug);
+      return {
+        ...lesson,
+        period: lesson.period ?? meta?.period ?? "T1",
+        sections: lesson.sections ?? meta?.sections ?? [],
+      };
+    });
+
+    await chunkedInsert(lessonsRows, 4, (batch) =>
       db.insert(lessons).values(batch).onConflictDoNothing(),
     );
     await chunkedInsert(exercisesSeed, 4, (batch) =>
@@ -83,6 +95,25 @@ async function doSeed() {
     await chunkedInsert(quizzesSeed, 4, (batch) =>
       db.insert(quizzes).values(batch).onConflictDoNothing(),
     );
+  }
+
+  {
+    // Base déjà seedée : on réaligne le trimestre et les filières de chaque fiche
+    // sur le programme officiel (opération idempotente, une seule requête).
+    const programMeta = lessonProgramMeta();
+    const rows = [...programMeta].map(([slug, meta]) => [slug, meta.period, meta.sections] as const);
+    if (rows.length > 0) {
+      const values = sql.join(
+        rows.map(([slug, period, sections]) => sql`(${slug}, ${period}, ${JSON.stringify(sections)}::jsonb)`),
+        sql`, `,
+      );
+      await db.execute(sql`
+        UPDATE lessons AS l
+        SET period = v.period, sections = v.sections
+        FROM (VALUES ${values}) AS v(slug, period, sections)
+        WHERE l.slug = v.slug
+      `);
+    }
   }
 
   {

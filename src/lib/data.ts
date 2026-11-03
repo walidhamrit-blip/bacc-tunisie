@@ -86,6 +86,17 @@ export async function listLessons(subjectSlug?: string | null): Promise<Lesson[]
   return rows;
 }
 
+/** Fiches de cours d'une filière (section du bac), triées par trimestre puis matière. */
+export async function listLessonsForSection(section?: string | null): Promise<Lesson[]> {
+  await ensureSeeded();
+  const rows = await db.select().from(lessons).orderBy(lessons.subjectSlug, lessons.orderIndex);
+  if (!section || section === "Toutes les sections") return rows;
+  const periodRank: Record<string, number> = { T1: 1, T2: 2, T3: 3, REV: 4 };
+  return rows
+    .filter((row) => row.sections.length === 0 || row.sections.includes(section))
+    .sort((a, b) => (periodRank[a.period] ?? 9) - (periodRank[b.period] ?? 9));
+}
+
 export async function getLesson(slug: string): Promise<Lesson | null> {
   await ensureSeeded();
   const rows = await db.select().from(lessons).where(eq(lessons.slug, slug)).limit(1);

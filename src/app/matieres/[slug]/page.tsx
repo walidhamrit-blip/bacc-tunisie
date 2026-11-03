@@ -12,6 +12,8 @@ import {
   listQuizzes,
 } from "@/lib/data";
 import { DifficultyDots, LevelPill, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
+import { PROGRAM } from "@/db/content/program";
+import { PERIODS } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,11 @@ export default async function SubjectPage({ params }: { params: Promise<{ slug: 
     listQuizzes(slug),
     getDashboard(),
   ]);
+
+  /* Programme officiel de la matière, filière par filière. */
+  const programEntries = PROGRAM.filter((entry) => entry.subjects.some((item) => item.slug === slug)).map(
+    (entry) => ({ section: entry.section, programSubject: entry.subjects.find((item) => item.slug === slug)! }),
+  );
 
   const [doneLessons, doneExercises, doneExams] = await Promise.all([
     getStudentLessonSlugs(dashboard.student.id),
@@ -140,6 +147,72 @@ export default async function SubjectPage({ params }: { params: Promise<{ slug: 
                 })}
               </ul>
             )}
+          <section className="card p-5">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="eyebrow">Programme officiel</p>
+                <h2 className="display text-xl font-semibold text-[var(--ink)]">
+                  Les chapitres, filière par filière
+                </h2>
+              </div>
+              {programEntries[0] ? (
+                <Link
+                  href={`/programme?section=${encodeURIComponent(programEntries[0].section)}&matiere=${slug}`}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Voir dans le programme
+                </Link>
+              ) : null}
+            </div>
+            <p className="mb-4 text-[0.82rem] text-[var(--ink-soft)]">
+              Cette matière n&apos;a pas le même volume horaire ni les mêmes chapitres selon la filière. Voici le plan
+              officiel, avec le trimestre d&apos;évaluation (T1, T2, T3) de chaque chapitre.
+            </p>
+            <div className="space-y-4">
+              {programEntries.map(({ section, programSubject }) => (
+                <div key={section} className="rounded-2xl border border-[var(--line)] p-4">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[0.9rem] font-semibold text-[var(--ink)]">{section}</p>
+                    <span className="badge badge-slate">coefficient {programSubject.coefficient}</span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {programSubject.themes.map((theme) => (
+                      <div key={theme.slug}>
+                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                          {theme.title}
+                        </p>
+                        <ul className="mt-1 space-y-1">
+                          {theme.chapters.map((chapter) => {
+                            const period = PERIODS.find((item) => item.id === chapter.period);
+                            return (
+                              <li
+                                key={`${theme.slug}-${chapter.slug}`}
+                                className="flex items-start gap-2 text-[0.84rem] text-[var(--ink)]"
+                              >
+                                <span className="mt-[0.15rem] inline-flex h-4 w-8 shrink-0 items-center justify-center rounded-full bg-[#f1ece1] text-[0.58rem] font-bold text-[var(--ink-soft)]" title={period?.exam}>
+                                  {period?.short}
+                                </span>
+                                {chapter.lessonSlug ? (
+                                  <Link href={`/cours/${chapter.lessonSlug}`} className="hover:text-[var(--brand)]">
+                                    {chapter.title}
+                                  </Link>
+                                ) : (
+                                  <span>{chapter.title}</span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[0.72rem] text-[var(--ink-soft)]">
+              T1 = 1er trimestre (devoir de synthèse N°1) · T2 = 2ème trimestre (DS2) · T3 = 3ème trimestre (DS3).
+            </p>
+          </section>
           </section>
 
           <section className="card p-5">
