@@ -10,6 +10,16 @@ build/
 next-env.d.ts
 *.tsbuildinfo
 
+# PWA (fichiers générés automatiquement par next-pwa au build)
+**/public/sw.js
+**/public/sw.js.map
+**/public/workbox-*.js
+**/public/workbox-*.js.map
+**/public/fallback-*.js
+**/public/fallback-*.js.map
+**/public/swe-worker-*.js
+**/public/swe-worker-*.js.map
+
 # environnement (ne jamais committer de secrets)
 .env
 .env.*

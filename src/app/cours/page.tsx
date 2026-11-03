@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDashboard, getStudentLessonSlugs, listLessons, listSubjects } from "@/lib/data";
+import { OfflineSyncButton } from "@/components/offline-sync-button";
 import { PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
 import { PERIOD_BY_ID, PERIODS, SECTIONS } from "@/lib/sections";
 
@@ -69,9 +70,12 @@ export default async function LessonsPage({
           </p>
         }
         actions={
-          <Link href="/quiz" className="btn btn-ghost btn-sm">
-            Aller aux quiz
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <OfflineSyncButton lessonSlugs={lessons.map((lesson) => lesson.slug)} />
+            <Link href="/quiz" className="btn btn-ghost btn-sm">
+              Aller aux quiz
+            </Link>
+          </div>
         }
       />
 

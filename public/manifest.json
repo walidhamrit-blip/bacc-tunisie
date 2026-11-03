@@ -1,0 +1,64 @@
+{
+  "id": "/",
+  "name": "Bac Coach Tunisie — Révision Baccalauréat",
+  "short_name": "Bac Coach",
+  "description": "Cours officiels par matière, fiches de révision hors-ligne, exercices corrigés et quiz pour réussir le baccalauréat tunisien.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf7ef",
+  "theme_color": "#c8102e",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Fiches de cours",
+      "short_name": "Cours",
+      "description": "Accéder aux fiches de révision disponibles hors-ligne",
+      "url": "/cours",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Exercices corrigés",
+      "short_name": "Exercices",
+      "description": "S'entraîner sur les exercices types du bac",
+      "url": "/exercices",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Quiz interactifs",
+      "short_name": "Quiz",
+      "description": "Tester ses connaissances rapidement",
+      "url": "/quiz",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
