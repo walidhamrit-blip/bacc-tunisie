@@ -55,7 +55,7 @@ export default async function CorrectionPage({
             <p className="eyebrow">Comment ça marche</p>
             <ol className="mt-2.5 space-y-3">
               {[
-                ["1. Tu joins le PDF", "Feuille d'exercices, devoir de maison, sujet d'entraînement (12 Mo max)."],
+                ["1. Tu joins le PDF", "Feuille d'exercices, devoir de maison, sujet d'entraînement (4 Mo max)."],
                 ["2. Lecture du document", "Le texte est extrait automatiquement (hors ligne, sans envoi à un tiers)."],
                 ["3. Repérage pédagogique", "Exercices, questions, notions du cours et verbes de consigne sont identifiés."],
                 ["4. Guide de correction", "Méthode par question, rappels de cours, pièges et prochaines étapes."],

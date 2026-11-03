@@ -33,8 +33,8 @@ export function CorrectionForm({
       setError("Joins un PDF ou colle l'énoncé (au moins 30 caractères).");
       return;
     }
-    if (file && file.size > 12 * 1024 * 1024) {
-      setError("Le fichier dépasse 12 Mo. Réduis sa taille ou colle le texte.");
+    if (file && file.size > 4 * 1024 * 1024) {
+      setError("Le fichier dépasse 4 Mo. Compresse-le ou colle le texte de l'énoncé.");
       return;
     }
 
@@ -95,7 +95,7 @@ export function CorrectionForm({
             <path d="M14 3v5h5M9 13h6M9 17h4" stroke="var(--brand)" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
           <span className="text-sm font-semibold text-[var(--ink)]">
-            {file ? file.name : "Déposer un PDF (12 Mo max)"}
+            {file ? file.name : "Déposer un PDF (4 Mo max)"}
           </span>
           <span className="text-xs text-[var(--ink-soft)]">
             Le texte du PDF est lu automatiquement. Si le document est scanné, colle l&apos;énoncé ci-dessous.
