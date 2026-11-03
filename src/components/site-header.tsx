@@ -8,6 +8,7 @@ const NAV = [
   { href: "/programme", label: "Programme" },
   { href: "/matieres", label: "Matières" },
   { href: "/cours", label: "Cours" },
+  { href: "/flashcards", label: "Flashcards" },
   { href: "/exercices", label: "Exercices" },
   { href: "/examens", label: "Examens & séries" },
   { href: "/quiz", label: "Quiz" },
@@ -37,12 +38,12 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-0.5 xl:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-full px-3 py-2 text-[0.84rem] font-semibold transition ${
+              className={`rounded-full px-2.5 py-2 text-[0.82rem] font-semibold transition ${
                 isActive(item.href)
                   ? "bg-[var(--ink)] text-[var(--cream)]"
                   : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
@@ -76,7 +77,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-[var(--line)] px-4 py-2 lg:hidden">
+      <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-[var(--line)] px-4 py-2 xl:hidden">
         {NAV.map((item) => (
           <Link
             key={item.href}
