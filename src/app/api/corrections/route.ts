@@ -9,7 +9,8 @@ import { isSection, normalizeSection } from "@/lib/sections";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_FILE_SIZE = 12 * 1024 * 1024;
+// Vercel limite le corps des requêtes à ~4,5 Mo : on reste sous cette marge.
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +27,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Choisis une matière valide." }, { status: 400 });
     }
     if (file && file.size > MAX_FILE_SIZE) {
-      return Response.json({ error: "Le PDF dépasse 12 Mo." }, { status: 413 });
+      return Response.json(
+        { error: "Le PDF dépasse 4 Mo. Compresse-le ou colle l'énoncé dans la zone de texte." },
+        { status: 413 },
+      );
     }
 
     let extracted = "";
