@@ -10,9 +10,10 @@ const NAV = [
   { href: "/cours", label: "Cours" },
   { href: "/flashcards", label: "Flashcards" },
   { href: "/exercices", label: "Exercices" },
-  { href: "/examens", label: "Examens & séries" },
+  { href: "/examens", label: "Examens" },
+  { href: "/bac-blanc", label: "Bac Blanc" },
   { href: "/quiz", label: "Quiz" },
-  { href: "/correction", label: "Corriger un PDF" },
+  { href: "/correction", label: "Corriger PDF" },
 ];
 
 export function SiteHeader() {
@@ -24,7 +25,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[var(--brand)] text-lg text-white shadow-[0_8px_18px_-10px_rgba(200,16,46,0.9)]">
             <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden>
               <path d="M12 2.5 14.3 9h6.7l-5.4 4 2 6.5-5.6-3.9L6.4 19.5l2-6.5L3 9h6.7L12 2.5Z" fill="currentColor" />
@@ -43,7 +44,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-full px-2.5 py-2 text-[0.82rem] font-semibold transition ${
+              className={`rounded-full px-2.5 py-2 text-[0.8rem] font-semibold transition ${
                 isActive(item.href)
                   ? "bg-[var(--ink)] text-[var(--cream)]"
                   : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
@@ -54,7 +55,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <Link href="/correction" className="btn btn-primary btn-sm hidden sm:inline-flex">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden>

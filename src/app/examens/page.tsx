@@ -22,9 +22,14 @@ export default async function ExamsPage() {
           </p>
         }
         actions={
-          <Link href="/quiz" className="btn btn-ghost btn-sm">
-            Tester mes acquis avec un quiz
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/bac-blanc" className="btn btn-primary btn-sm">
+              ⏱ Lancer un Bac Blanc chronométré
+            </Link>
+            <Link href="/quiz" className="btn btn-ghost btn-sm">
+              Quiz par notion
+            </Link>
+          </div>
         }
       />
 
