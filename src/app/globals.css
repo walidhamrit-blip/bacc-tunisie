@@ -1,23 +1,92 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  color-scheme: light;
   --cream: #fbf7ef;
   --paper: #ffffff;
+  --surface-subtle: #fcfaf5;
+  --surface-muted: #f7f3ea;
+  --header-bg: rgba(251, 247, 239, 0.88);
+  --footer-bg: #f5efe3;
   --ink: #15201c;
   --ink-soft: #47534d;
   --line: #e7dfd1;
+  --line-strong: #cdbfa8;
+  --dot-muted: #ddd4c4;
   --brand: #c8102e;
   --brand-dark: #9d0b24;
+  --brand-soft: #fdeaed;
+  --danger-soft: #fff5f6;
+  --danger-border: #f0c9ce;
   --green: #0f5132;
+  --green-ink: #0d3a26;
+  --green-note: #37564a;
   --green-soft: #e8f1ea;
+  --green-border: #cbe2d2;
   --gold: #d99a06;
+  --gold-ink: #8a6200;
   --gold-soft: #fdf3da;
   --blue: #1e5eff;
   --sky-soft: #e8efff;
   --violet: #6d3bd4;
+  --violet-soft: #f1eafe;
+  --slate-soft: #eef0ee;
+  --callout-info-bg: #f3f7ff;
+  --callout-info-border: #cfdcff;
+  --callout-info-ink: #1b3f9a;
+  --callout-warn-bg: #fff6e9;
+  --callout-warn-border: #f3ddb5;
+  --callout-warn-ink: #7a4b04;
+  --track-bg: #efe8db;
   --radius: 18px;
   --shadow-sm: 0 1px 2px rgba(21, 32, 28, 0.06), 0 8px 24px -18px rgba(21, 32, 28, 0.5);
   --shadow-md: 0 2px 6px rgba(21, 32, 28, 0.06), 0 24px 48px -32px rgba(21, 32, 28, 0.6);
+}
+
+/* Palette nocturne anti-fatigue oculaire :
+   pas de noir pur (#000) ni de blanc éblouissant (#fff) pour éviter l'effet de halo
+   lors des révisions tardives. Tons ardoise chaude et encre parchemin adoucie. */
+.dark {
+  color-scheme: dark;
+  --cream: #121816;
+  --paper: #19211f;
+  --surface-subtle: #202a27;
+  --surface-muted: #24302c;
+  --header-bg: rgba(18, 24, 22, 0.88);
+  --footer-bg: #0e1312;
+  --ink: #e9e4da;
+  --ink-soft: #a5b1ab;
+  --line: #2a3632;
+  --line-strong: #3d4f49;
+  --dot-muted: #33423d;
+  --brand: #e03e57;
+  --brand-dark: #c8102e;
+  --brand-soft: rgba(224, 62, 87, 0.16);
+  --danger-soft: rgba(224, 62, 87, 0.12);
+  --danger-border: rgba(224, 62, 87, 0.34);
+  --green: #58c991;
+  --green-ink: #b9f0d2;
+  --green-note: #92cdb0;
+  --green-soft: rgba(45, 160, 104, 0.15);
+  --green-border: rgba(88, 201, 145, 0.3);
+  --gold: #e5b13a;
+  --gold-ink: #f0c96b;
+  --gold-soft: rgba(229, 177, 58, 0.14);
+  --blue: #7aaaff;
+  --sky-soft: rgba(92, 149, 255, 0.16);
+  --violet: #b190ff;
+  --violet-soft: rgba(152, 114, 245, 0.16);
+  --slate-soft: #25302d;
+  --callout-info-bg: rgba(74, 132, 240, 0.13);
+  --callout-info-border: rgba(122, 170, 255, 0.28);
+  --callout-info-ink: #9bc0ff;
+  --callout-warn-bg: rgba(229, 177, 58, 0.12);
+  --callout-warn-border: rgba(229, 177, 58, 0.3);
+  --callout-warn-ink: #f2cb72;
+  --track-bg: #26322e;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 26px -18px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4), 0 24px 48px -28px rgba(0, 0, 0, 0.8);
 }
 
 * {
@@ -41,6 +110,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.dark body {
+  background-image:
+    radial-gradient(900px 500px at 100% -10%, rgba(224, 62, 87, 0.09), transparent 65%),
+    radial-gradient(700px 500px at -10% 10%, rgba(45, 160, 104, 0.08), transparent 65%);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -48,6 +123,10 @@ a {
 
 ::selection {
   background: rgba(200, 16, 46, 0.16);
+}
+
+.dark ::selection {
+  background: rgba(224, 62, 87, 0.28);
 }
 
 .display {
@@ -78,7 +157,7 @@ a {
 
 .card-hover:hover {
   transform: translateY(-3px);
-  border-color: #d7cbb6;
+  border-color: var(--line-strong);
   box-shadow: var(--shadow-md);
 }
 
@@ -94,7 +173,7 @@ a {
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease, color 150ms ease;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease, color 150ms ease, border-color 150ms ease;
   white-space: nowrap;
 }
 
@@ -114,22 +193,22 @@ a {
 
 .btn-dark {
   background: var(--ink);
-  color: #fff;
+  color: var(--cream);
 }
 
 .btn-dark:hover {
-  background: #26332d;
+  opacity: 0.9;
 }
 
 .btn-ghost {
-  background: #fff;
+  background: var(--paper);
   border-color: var(--line);
   color: var(--ink);
 }
 
 .btn-ghost:hover {
-  border-color: #cdbfa8;
-  background: #fdfbf6;
+  border-color: var(--line-strong);
+  background: var(--surface-subtle);
 }
 
 .btn-sm {
@@ -143,7 +222,7 @@ a {
   gap: 0.4rem;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--paper);
   padding: 0.35rem 0.8rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -152,14 +231,14 @@ a {
 }
 
 .chip:hover {
-  border-color: #cbbda4;
+  border-color: var(--line-strong);
   color: var(--ink);
 }
 
 .chip-active {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fff;
+  color: var(--cream);
 }
 
 .badge {
@@ -174,8 +253,8 @@ a {
 }
 
 .badge-brand {
-  background: #fdeaed;
-  color: var(--brand-dark);
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .badge-green {
@@ -185,24 +264,24 @@ a {
 
 .badge-gold {
   background: var(--gold-soft);
-  color: #8a6200;
+  color: var(--gold-ink);
 }
 
 .badge-blue {
   background: var(--sky-soft);
-  color: #1b45b8;
+  color: var(--blue);
 }
 
 .badge-slate {
-  background: #eef0ee;
-  color: #47534d;
+  background: var(--slate-soft);
+  color: var(--ink-soft);
 }
 
 .progress-track {
   height: 9px;
   width: 100%;
   border-radius: 999px;
-  background: #efe8db;
+  background: var(--track-bg);
   overflow: hidden;
 }
 
@@ -237,7 +316,7 @@ a {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--paper);
   padding: 0.7rem 0.85rem;
   font-size: 0.92rem;
   color: var(--ink);
@@ -247,7 +326,7 @@ a {
 .input:focus,
 .textarea:focus,
 .select:focus {
-  outline: 2px solid rgba(200, 16, 46, 0.25);
+  outline: 2px solid rgba(224, 62, 87, 0.28);
   border-color: var(--brand);
 }
 
@@ -268,6 +347,95 @@ a {
     linear-gradient(to right, rgba(21, 32, 28, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(21, 32, 28, 0.05) 1px, transparent 1px);
   background-size: 26px 26px;
+}
+
+.dark .grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(233, 228, 218, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(233, 228, 218, 0.04) 1px, transparent 1px);
+}
+
+/* Harmonisation automatique des surfaces claires codées en dur dans les pages existantes */
+.dark .bg-white,
+.dark .bg-white\/70 {
+  background-color: var(--paper);
+}
+
+.dark .bg-\[\#fcfaf5\],
+.dark .bg-\[\#faf7f0\],
+.dark .bg-\[\#fdfbf6\],
+.dark .bg-\[\#f8f4ec\],
+.dark .bg-\[\#f7f3ea\],
+.dark .bg-\[\#f1ece1\] {
+  background-color: var(--surface-subtle);
+}
+
+.dark .hover\:bg-\[\#fcfaf5\]:hover,
+.dark .hover\:bg-\[\#faf7f0\]:hover {
+  background-color: var(--surface-muted);
+}
+
+.dark .hover\:border-\[\#cdbfa8\]:hover {
+  border-color: var(--line-strong);
+}
+
+.dark .bg-\[\#fdf6e7\],
+.dark .bg-\[\#fff8f1\],
+.dark .bg-\[\#fff6e9\] {
+  background-color: var(--callout-warn-bg);
+  border-color: var(--callout-warn-border);
+}
+
+.dark .bg-\[\#f3f7ff\] {
+  background-color: var(--callout-info-bg);
+  border-color: var(--callout-info-border);
+}
+
+.dark .bg-\[\#fff5f6\] {
+  background-color: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.dark .border-\[\#d9c9a4\],
+.dark .border-\[\#e7d5b0\],
+.dark .border-\[\#f0d6c0\],
+.dark .border-\[\#f3ddb5\],
+.dark .border-\[\#e8cfa0\] {
+  border-color: var(--callout-warn-border);
+}
+
+.dark .border-\[\#cbe2d2\],
+.dark .border-\[\#d9e3d9\] {
+  border-color: var(--green-border);
+}
+
+.dark .border-\[\#cfdcff\] {
+  border-color: var(--callout-info-border);
+}
+
+.dark .border-\[\#cbbda4\] {
+  border-color: var(--line-strong);
+}
+
+.dark .text-\[\#6b4a2a\],
+.dark .text-\[\#7a4b04\],
+.dark .text-\[\#8a6200\],
+.dark .text-\[\#6e4e00\],
+.dark .\!text-\[\#8a4b12\] {
+  color: var(--callout-warn-ink) !important;
+}
+
+.dark .text-\[\#0d3a26\],
+.dark .text-\[\#204a37\] {
+  color: var(--green-ink);
+}
+
+.dark .text-\[\#1b3f9a\] {
+  color: var(--callout-info-ink);
+}
+
+.dark .bg-\[var\(--ink\)\].text-white {
+  color: var(--cream);
 }
 
 .fade-up {

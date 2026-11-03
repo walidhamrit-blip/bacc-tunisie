@@ -3,10 +3,14 @@ import type { ReactNode } from "react";
 import { PwaBanner } from "@/components/pwa-banner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const viewport: Viewport = {
-  themeColor: "#c8102e",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#c8102e" },
+    { media: "(prefers-color-scheme: dark)", color: "#121816" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -37,14 +41,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body>
-        <div className="flex min-h-screen flex-col">
-          <PwaBanner />
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </div>
+        <ThemeProvider>
+          <div className="flex min-h-screen flex-col">
+            <PwaBanner />
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

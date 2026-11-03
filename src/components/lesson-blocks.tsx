@@ -35,14 +35,14 @@ export function LessonBlocks({ blocks }: { blocks: LessonBlock[] }) {
 
         if (block.type === "steps") {
           return (
-            <section key={index} className="rounded-2xl border border-[var(--line)] bg-[#fcfaf5] p-4 sm:p-5">
+            <section key={index} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-4 sm:p-5">
               {block.title ? (
                 <h3 className="display mb-3 text-lg font-semibold text-[var(--ink)]">{block.title}</h3>
               ) : null}
               <ol className="space-y-3">
                 {block.items.map((item, itemIndex) => (
                   <li key={itemIndex} className="flex gap-3">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ink)] text-[0.72rem] font-bold text-white">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ink)] text-[0.72rem] font-bold text-[var(--cream)]">
                       {itemIndex + 1}
                     </span>
                     <span className="text-[0.92rem] leading-relaxed text-[var(--ink-soft)]">{item}</span>
@@ -57,24 +57,38 @@ export function LessonBlocks({ blocks }: { blocks: LessonBlock[] }) {
           return (
             <section
               key={index}
-              className="rounded-2xl border border-[#d9e3d9] bg-[var(--green-soft)] p-4 sm:p-5"
+              className="rounded-2xl border border-[var(--green-border)] bg-[var(--green-soft)] p-4 sm:p-5"
             >
               {block.title ? (
                 <p className="mb-2 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[var(--green)]">
                   {block.title}
                 </p>
               ) : null}
-              <p className="formula text-[1rem] font-semibold text-[#0d3a26] sm:text-[1.05rem]">{block.expression}</p>
-              {block.note ? <p className="mt-2 text-[0.85rem] text-[#37564a]">{block.note}</p> : null}
+              <p className="formula text-[1rem] font-semibold text-[var(--green-ink)] sm:text-[1.05rem]">
+                {block.expression}
+              </p>
+              {block.note ? <p className="mt-2 text-[0.85rem] text-[var(--green-note)]">{block.note}</p> : null}
             </section>
           );
         }
 
         if (block.type === "callout") {
           const palette = {
-            info: { bg: "#f3f7ff", border: "#cfdcff", color: "#1b3f9a" },
-            warn: { bg: "#fff6e9", border: "#f3ddb5", color: "#7a4b04" },
-            tip: { bg: "var(--green-soft)", border: "#cbe2d2", color: "var(--green)" },
+            info: {
+              bg: "var(--callout-info-bg)",
+              border: "var(--callout-info-border)",
+              color: "var(--callout-info-ink)",
+            },
+            warn: {
+              bg: "var(--callout-warn-bg)",
+              border: "var(--callout-warn-border)",
+              color: "var(--callout-warn-ink)",
+            },
+            tip: {
+              bg: "var(--green-soft)",
+              border: "var(--green-border)",
+              color: "var(--green)",
+            },
           }[block.tone];
           return (
             <section
@@ -93,14 +107,14 @@ export function LessonBlocks({ blocks }: { blocks: LessonBlock[] }) {
         return (
           <section key={index} className="overflow-hidden rounded-2xl border border-[var(--line)]">
             {block.title ? (
-              <p className="border-b border-[var(--line)] bg-[#fcfaf5] px-4 py-2.5 text-sm font-semibold text-[var(--ink)]">
+              <p className="border-b border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)]">
                 {block.title}
               </p>
             ) : null}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] border-collapse text-left text-[0.85rem]">
                 <thead>
-                  <tr className="bg-[#f7f3ea]">
+                  <tr className="bg-[var(--surface-muted)]">
                     {block.head.map((cell, cellIndex) => (
                       <th key={cellIndex} className="px-4 py-2.5 font-semibold text-[var(--ink)]">
                         {cell}

@@ -114,8 +114,8 @@ export function QuizPlayer({
                 key={itemIndex}
                 className="rounded-xl border p-3"
                 style={{
-                  borderColor: isCorrect ? "#cbe2d2" : "#f0c9ce",
-                  background: isCorrect ? "#f4faf5" : "#fff7f8",
+                  borderColor: isCorrect ? "var(--green-border)" : "var(--danger-border)",
+                  background: isCorrect ? "var(--green-soft)" : "var(--danger-soft)",
                 }}
               >
                 <p className="text-sm font-semibold text-[var(--ink)]">
@@ -163,15 +163,27 @@ export function QuizPlayer({
               onClick={() => (validated ? null : setSelected(choiceIndex))}
               className="flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition"
               style={{
-                borderColor: isRight ? "var(--green)" : isWrong ? "var(--brand)" : isSelected ? "var(--ink)" : "var(--line)",
-                background: isRight ? "#f1f9f3" : isWrong ? "#fff5f6" : isSelected ? "#fbf7ef" : "#fff",
+                borderColor: isRight
+                  ? "var(--green)"
+                  : isWrong
+                    ? "var(--brand)"
+                    : isSelected
+                      ? "var(--ink)"
+                      : "var(--line)",
+                background: isRight
+                  ? "var(--green-soft)"
+                  : isWrong
+                    ? "var(--danger-soft)"
+                    : isSelected
+                      ? "var(--surface-subtle)"
+                      : "var(--paper)",
                 cursor: validated ? "default" : "pointer",
               }}
             >
               <span
                 className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[0.68rem] font-bold"
                 style={{
-                  borderColor: isRight ? "var(--green)" : isWrong ? "var(--brand)" : "#c9bfae",
+                  borderColor: isRight ? "var(--green)" : isWrong ? "var(--brand)" : "var(--line-strong)",
                   color: isRight ? "var(--green)" : isWrong ? "var(--brand)" : "var(--ink-soft)",
                 }}
               >
@@ -186,7 +198,11 @@ export function QuizPlayer({
       {validated ? (
         <div
           className="mt-4 rounded-xl border p-3 text-sm"
-          style={{ borderColor: "#cbe2d2", background: "var(--green-soft)", color: "#0d3a26" }}
+          style={{
+            borderColor: "var(--green-border)",
+            background: "var(--green-soft)",
+            color: "var(--green-ink)",
+          }}
         >
           <strong>{selected === question.answerIndex ? "Bonne réponse !" : "Réponse à corriger."}</strong>{" "}
           {question.explanation}
