@@ -40,6 +40,9 @@ export default async function HomePage() {
                   <path d="M5 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
+              <Link href="/programme" className="btn btn-ghost">
+                Mon programme de l&apos;année
+              </Link>
               <Link href="/correction" className="btn btn-ghost">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
                   <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -143,6 +146,13 @@ export default async function HomePage() {
             text="Correction immédiate et explication de chaque réponse."
             color="var(--gold)"
             icon="⚡"
+          />
+          <QuickCard
+            href="/programme"
+            title="Programme officiel"
+            text="Tes chapitres par filière, avec le trimestre de chaque devoir de synthèse."
+            color="var(--violet)"
+            icon="🗺️"
           />
         </div>
 

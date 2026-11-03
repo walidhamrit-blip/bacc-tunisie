@@ -1,4 +1,5 @@
 import type { Flashcard, LessonBlock } from "@/db/schema";
+import type { PeriodId, SectionName } from "@/lib/sections";
 
 export type LessonSeed = {
   slug: string;
@@ -7,6 +8,10 @@ export type LessonSeed = {
   chapter: string;
   summary: string;
   level: string;
+  /** Trimestre du programme officiel (T1/T2/T3) ou révision (REV). */
+  period?: PeriodId;
+  /** Filières (sections du bac) où cette fiche est au programme. */
+  sections?: SectionName[];
   durationMin: number;
   orderIndex: number;
   objectives: string[];

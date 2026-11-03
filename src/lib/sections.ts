@@ -50,3 +50,24 @@ export const ALL_SECTIONS = ["Toutes les sections", ...SECTIONS];
 export function normalizeSection(value: string | null | undefined): SectionName {
   return isSection(value) ? value : "Sciences expérimentales";
 }
+
+/**
+ * Périodes de l'année scolaire du bac, alignées sur les devoirs de synthèse
+ * trimestriels (DS1, DS2, DS3) puis la révision et l'examen de juin.
+ */
+export const PERIODS = [
+  { id: "T1", short: "T1", label: "1er trimestre", months: "Septembre – Décembre", exam: "Devoir de synthèse N°1" },
+  { id: "T2", short: "T2", label: "2ème trimestre", months: "Janvier – Mars", exam: "Devoir de synthèse N°2" },
+  { id: "T3", short: "T3", label: "3ème trimestre", months: "Avril – Mai", exam: "Devoir de synthèse N°3" },
+  { id: "REV", short: "Rév.", label: "Révision & bac", months: "Juin", exam: "Examen du baccalauréat" },
+] as const;
+
+export type PeriodId = (typeof PERIODS)[number]["id"];
+
+export const PERIOD_BY_ID: Record<PeriodId, (typeof PERIODS)[number]> = Object.fromEntries(
+  PERIODS.map((period) => [period.id, period]),
+) as Record<PeriodId, (typeof PERIODS)[number]>;
+
+export function isPeriod(value: string | null | undefined): value is PeriodId {
+  return !!value && (PERIODS as readonly { id: string }[]).some((period) => period.id === value);
+}

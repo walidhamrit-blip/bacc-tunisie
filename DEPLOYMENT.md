@@ -41,10 +41,13 @@ npm run db:push       # crée / met à jour les tables (drizzle-kit push)
 
 ### Option B — SQL direct
 
-Ouvre la console SQL de Neon et colle le contenu de `drizzle/0000_init.sql`.
+Ouvre la console SQL de Neon et colle le contenu de `drizzle/0000_init.sql` puis de
+`drizzle/0001_lessons_program_period.sql` (ajout des colonnes `period` et `sections` sur
+`lessons`).
 
-> Le contenu pédagogique (matières, cours, exercices, examens, quiz) et l'élève de démo
-> sont insérés **automatiquement au premier chargement** de l'application
+> Le contenu pédagogique (matières, cours, exercices, examens, quiz), le **programme officiel
+> des 7 filières** (trimestre de chaque chapitre, cf. `src/db/content/program.ts`) et l'élève
+> de démo sont insérés **automatiquement au premier chargement** de l'application
 > (`ensureSeeded()` dans `src/db/seed.ts`). Rien d'autre à faire.
 
 ## 3. Déployer sur Vercel

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDashboard, listExams, listExercises, listLessons, listQuizzes, listSubjects } from "@/lib/data";
 import { LevelPill, PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
 import { SECTIONS } from "@/lib/sections";
+import { programSectionSubjects } from "@/db/content/program";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,11 @@ export default async function SubjectsPage({
   ]);
 
   const levelBySlug = new Map(dashboard.subjectLevels.map((row) => [row.subject.slug, row]));
+  /* Les matières réellement au programme de la filière choisie. */
+  const programSlugs = section !== "Toutes les sections" ? new Set(programSectionSubjects(section)) : null;
+  const visibleSubjects = programSlugs
+    ? subjects.filter((subject) => programSlugs.has(subject.slug))
+    : subjects;
 
   return (
     <PageShell>
@@ -59,8 +65,20 @@ export default async function SubjectsPage({
         ))}
       </div>
 
+      {section !== "Toutes les sections" ? (
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-soft)]">
+          <span className="badge badge-slate">{visibleSubjects.length} matières dans cette filière</span>
+          <Link
+            href={`/programme?section=${encodeURIComponent(section)}`}
+            className="font-semibold text-[var(--brand)]"
+          >
+            Voir le programme complet de la filière (chapitres + trimestres) →
+          </Link>
+        </div>
+      ) : null}
+
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((subject) => {
+        {visibleSubjects.map((subject) => {
           const lessonCount = lessons.filter((lesson) => lesson.subjectSlug === subject.slug).length;
           const exerciseCount = exercises.filter((exercise) => exercise.subjectSlug === subject.slug).length;
           const examCount = exams.filter((exam) => exam.subjectSlug === subject.slug).length;

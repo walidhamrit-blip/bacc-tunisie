@@ -90,6 +90,8 @@ export const lessons = pgTable(
     chapter: text("chapter").notNull(),
     summary: text("summary").notNull(),
     level: text("level").notNull(),
+    period: text("period").notNull().default("T1"),
+    sections: jsonb("sections").$type<string[]>().notNull().default([]),
     durationMin: integer("duration_min").notNull().default(20),
     orderIndex: integer("order_index").notNull().default(0),
     objectives: jsonb("objectives").$type<string[]>().notNull().default([]),

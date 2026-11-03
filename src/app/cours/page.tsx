@@ -1,25 +1,60 @@
 import Link from "next/link";
 import { getDashboard, getStudentLessonSlugs, listLessons, listSubjects } from "@/lib/data";
 import { PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
+import { PERIOD_BY_ID, PERIODS, SECTIONS } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 
 export default async function LessonsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ matiere?: string }>;
+  searchParams: Promise<{ matiere?: string; section?: string; trimestre?: string }>;
 }) {
   const params = await searchParams;
   const [subjects, lessons, dashboard] = await Promise.all([listSubjects(), listLessons(), getDashboard()]);
   const doneLessons = await getStudentLessonSlugs(dashboard.student.id);
   const activeSubject = params.matiere;
-  const filtered = activeSubject ? lessons.filter((lesson) => lesson.subjectSlug === activeSubject) : lessons;
+  const activeSection = params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
+    ? params.section
+    : null;
+  const activePeriod = params.trimestre && PERIOD_BY_ID[params.trimestre as keyof typeof PERIOD_BY_ID]
+    ? params.trimestre
+    : null;
+
+  const filtered = lessons
+    .filter((lesson) => (activeSubject ? lesson.subjectSlug === activeSubject : true))
+    /* Une fiche sans filière renseignée est considérée comme valable partout. */
+    .filter((lesson) =>
+      activeSection ? lesson.sections.length === 0 || lesson.sections.includes(activeSection) : true,
+    )
+    .filter((lesson) => (activePeriod ? lesson.period === activePeriod : true));
+
   const grouped = subjects
     .map((subject) => ({
       subject,
       lessons: filtered.filter((lesson) => lesson.subjectSlug === subject.slug),
     }))
     .filter((group) => group.lessons.length > 0);
+
+  /* Les fiches sont ordonnées par trimestre dans chaque matière. */
+  const periodRank: Record<string, number> = { T1: 1, T2: 2, T3: 3, REV: 4 };
+  for (const group of grouped) {
+    group.lessons = [...group.lessons].sort(
+      (a, b) => (periodRank[a.period] ?? 9) - (periodRank[b.period] ?? 9) || a.orderIndex - b.orderIndex,
+    );
+  }
+
+  const filterHref = (next: { section?: string | null; trimestre?: string | null; matiere?: string | null }) => {
+    const search = new URLSearchParams();
+    const section = next.section === undefined ? activeSection : next.section;
+    const trimestre = next.trimestre === undefined ? activePeriod : next.trimestre;
+    const matiere = next.matiere === undefined ? activeSubject : next.matiere;
+    if (section) search.set("section", section);
+    if (trimestre) search.set("trimestre", trimestre);
+    if (matiere) search.set("matiere", matiere);
+    const query = search.toString();
+    return query ? `/cours?${query}` : "/cours";
+  };
 
   return (
     <PageShell>
@@ -29,7 +64,8 @@ export default async function LessonsPage({
         description={
           <p>
             Chaque fiche contient les objectifs, les notions expliquées simplement, les formules utiles, les erreurs
-            fréquentes et des cartes de révision. Le niveau indiqué correspond au programme officiel tunisien.
+            fréquentes et des cartes de révision. Chaque fiche est rattachée à sa filière et à son trimestre du
+            programme officiel tunisien : filtre pour ne voir que ce qui est évalué à ton prochain devoir de synthèse.
           </p>
         }
         actions={
@@ -54,6 +90,56 @@ export default async function LessonsPage({
               {subject.shortName}
             </Link>
           ))}
+      </div>
+
+      <div className="mb-5 grid gap-2 rounded-2xl border border-[var(--line)] bg-[#fcfaf5] p-3 sm:grid-cols-[auto_1fr] sm:items-center">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+          <Link
+            href={filterHref({ section: null })}
+            className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
+          >
+            Toutes
+          </Link>
+          {SECTIONS.map((item) => (
+            <Link
+              key={item}
+              href={filterHref({ section: item })}
+              className={`chip whitespace-nowrap ${activeSection === item ? "chip-active" : ""}`}
+            >
+              {item}
+            </Link>
+          ))}
+        </div>
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Trimestre</p>
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+          <Link
+            href={filterHref({ trimestre: null })}
+            className={`chip whitespace-nowrap ${!activePeriod ? "chip-active" : ""}`}
+          >
+            Toute l&apos;année
+          </Link>
+          {PERIODS.map((period) => (
+            <Link
+              key={period.id}
+              href={filterHref({ trimestre: period.id })}
+              className={`chip whitespace-nowrap ${activePeriod === period.id ? "chip-active" : ""}`}
+              title={`${period.label} · ${period.exam}`}
+            >
+              {period.label}
+            </Link>
+          ))}
+        </div>
+        {activeSection ? (
+          <div className="sm:col-span-2">
+            <Link
+              href={`/programme?section=${encodeURIComponent(activeSection)}`}
+              className="text-xs font-semibold text-[var(--brand)]"
+            >
+              Voir le programme complet de la filière {activeSection} →
+            </Link>
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-6">
@@ -91,7 +177,12 @@ export default async function LessonsPage({
                       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
                         {lesson.chapter}
                       </p>
-                      {doneLessons.has(lesson.slug) ? <span className="badge badge-green">compris</span> : null}
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <span className="badge badge-slate" title={`${PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.label ?? lesson.period} · ${PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.exam ?? ""}`}>
+                          {PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.short ?? lesson.period}
+                        </span>
+                        {doneLessons.has(lesson.slug) ? <span className="badge badge-green">compris</span> : null}
+                      </span>
                     </div>
                     <p className="mt-1 text-sm font-semibold leading-snug text-[var(--ink)]">{lesson.title}</p>
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">{lesson.summary}</p>
