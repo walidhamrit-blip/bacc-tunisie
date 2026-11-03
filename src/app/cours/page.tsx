@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getDashboard, getStudentLessonSlugs, listLessons, listSubjects } from "@/lib/data";
+import { lessonDisplayPeriod, lessonPeriodsForFilter } from "@/db/content/program";
 import { OfflineSyncButton } from "@/components/offline-sync-button";
 import { PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
-import { PERIOD_BY_ID, PERIODS, SECTIONS } from "@/lib/sections";
+import { PERIOD_BY_ID, PERIODS, SECTIONS, type PeriodId } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function LessonsPage({
     ? params.section
     : null;
   const activePeriod = params.trimestre && PERIOD_BY_ID[params.trimestre as keyof typeof PERIOD_BY_ID]
-    ? params.trimestre
+    ? (params.trimestre as PeriodId)
     : null;
 
   const filtered = lessons
@@ -28,7 +29,11 @@ export default async function LessonsPage({
     .filter((lesson) =>
       activeSection ? lesson.sections.length === 0 || lesson.sections.includes(activeSection) : true,
     )
-    .filter((lesson) => (activePeriod ? lesson.period === activePeriod : true));
+    .filter((lesson) =>
+      activePeriod
+        ? lessonPeriodsForFilter(lesson.slug, activeSection, lesson.period).includes(activePeriod)
+        : true,
+    );
 
   const grouped = subjects
     .map((subject) => ({
@@ -37,12 +42,14 @@ export default async function LessonsPage({
     }))
     .filter((group) => group.lessons.length > 0);
 
-  /* Les fiches sont ordonnées par trimestre dans chaque matière. */
+  /* Les fiches sont ordonnées par trimestre (dans la filière choisie) dans chaque matière. */
   const periodRank: Record<string, number> = { T1: 1, T2: 2, T3: 3, REV: 4 };
   for (const group of grouped) {
-    group.lessons = [...group.lessons].sort(
-      (a, b) => (periodRank[a.period] ?? 9) - (periodRank[b.period] ?? 9) || a.orderIndex - b.orderIndex,
-    );
+    group.lessons = [...group.lessons].sort((a, b) => {
+      const periodA = lessonDisplayPeriod(a.slug, activeSection, a.period);
+      const periodB = lessonDisplayPeriod(b.slug, activeSection, b.period);
+      return (periodRank[periodA] ?? 9) - (periodRank[periodB] ?? 9) || a.orderIndex - b.orderIndex;
+    });
   }
 
   const filterHref = (next: { section?: string | null; trimestre?: string | null; matiere?: string | null }) => {
@@ -171,30 +178,39 @@ export default async function LessonsPage({
                 </div>
               </div>
               <div className="grid gap-2.5 sm:grid-cols-2">
-                {subjectLessons.map((lesson) => (
-                  <Link
-                    key={lesson.slug}
-                    href={`/cours/${lesson.slug}`}
-                    className="rounded-xl border border-[var(--line)] p-4 transition hover:border-[#cdbfa8] hover:bg-[#fcfaf5]"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                        {lesson.chapter}
-                      </p>
-                      <span className="flex shrink-0 items-center gap-1.5">
-                        <span className="badge badge-slate" title={`${PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.label ?? lesson.period} · ${PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.exam ?? ""}`}>
-                          {PERIOD_BY_ID[lesson.period as keyof typeof PERIOD_BY_ID]?.short ?? lesson.period}
+                {subjectLessons.map((lesson) => {
+                  const displayPeriod = activePeriod
+                    ? activePeriod
+                    : lessonDisplayPeriod(lesson.slug, activeSection, lesson.period);
+                  const periodInfo = PERIOD_BY_ID[displayPeriod];
+                  return (
+                    <Link
+                      key={lesson.slug}
+                      href={`/cours/${lesson.slug}`}
+                      className="rounded-xl border border-[var(--line)] p-4 transition hover:border-[#cdbfa8] hover:bg-[#fcfaf5]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                          {lesson.chapter}
+                        </p>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <span
+                            className="badge badge-slate"
+                            title={`${periodInfo?.label ?? displayPeriod} · ${periodInfo?.exam ?? ""}`}
+                          >
+                            {periodInfo?.short ?? displayPeriod}
+                          </span>
+                          {doneLessons.has(lesson.slug) ? <span className="badge badge-green">compris</span> : null}
                         </span>
-                        {doneLessons.has(lesson.slug) ? <span className="badge badge-green">compris</span> : null}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm font-semibold leading-snug text-[var(--ink)]">{lesson.title}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">{lesson.summary}</p>
-                    <p className="mt-2 text-[0.7rem] font-semibold" style={{ color: subject.accent }}>
-                      {lesson.durationMin} min · {lesson.objectives.length} objectifs →
-                    </p>
-                  </Link>
-                ))}
+                      </div>
+                      <p className="mt-1 text-sm font-semibold leading-snug text-[var(--ink)]">{lesson.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">{lesson.summary}</p>
+                      <p className="mt-2 text-[0.7rem] font-semibold" style={{ color: subject.accent }}>
+                        {lesson.durationMin} min · {lesson.objectives.length} objectifs →
+                      </p>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           );

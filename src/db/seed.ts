@@ -98,19 +98,25 @@ async function doSeed() {
   }
 
   {
-    // Base déjà seedée : on réaligne le trimestre et les filières de chaque fiche
+    // Base déjà seedée : on réaligne le trimestre, les filières et l'ordre de chaque fiche
     // sur le programme officiel (opération idempotente, une seule requête).
     const programMeta = lessonProgramMeta();
-    const rows = [...programMeta].map(([slug, meta]) => [slug, meta.period, meta.sections] as const);
+    const orderBySlug = new Map(lessonsSeed.map((lesson) => [lesson.slug, lesson.orderIndex]));
+    const rows = [...programMeta].map(
+      ([slug, meta]) => [slug, meta.period, meta.sections, orderBySlug.get(slug) ?? 1] as const,
+    );
     if (rows.length > 0) {
       const values = sql.join(
-        rows.map(([slug, period, sections]) => sql`(${slug}, ${period}, ${JSON.stringify(sections)}::jsonb)`),
+        rows.map(
+          ([slug, period, sections, orderIndex]) =>
+            sql`(${slug}, ${period}, ${JSON.stringify(sections)}::jsonb, ${orderIndex}::int)`,
+        ),
         sql`, `,
       );
       await db.execute(sql`
         UPDATE lessons AS l
-        SET period = v.period, sections = v.sections
-        FROM (VALUES ${values}) AS v(slug, period, sections)
+        SET period = v.period, sections = v.sections, order_index = v.order_index
+        FROM (VALUES ${values}) AS v(slug, period, sections, order_index)
         WHERE l.slug = v.slug
       `);
     }

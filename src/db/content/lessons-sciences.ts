@@ -564,6 +564,91 @@ const svtImmuno: LessonSeed = {
   tags: ["immunité", "lymphocyte", "anticorps", "vaccination", "VIH"],
 };
 
+const infoTableur: LessonSeed = {
+  slug: "tableur-formules-graphiques",
+  subjectSlug: "informatique",
+  title: "Tableur : formules, références, fonctions et graphiques",
+  chapter: "Outils numériques · Tableur",
+  summary:
+    "Structurer une feuille de calcul, maîtriser l'adressage relatif et absolu ($), écrire des formules conditionnelles (SI, NB.SI) et représenter les données par le bon graphique.",
+  level: "Bac · Tronc commun (1er trimestre)",
+  durationMin: 24,
+  orderIndex: 1,
+  objectives: [
+    "Distinguer référence relative (A2), absolue ($A$2) et mixte ($A2, A$2) lors d'une recopie",
+    "Utiliser sans erreur les fonctions SOMME, MOYENNE, MIN, MAX, NB et NB.SI",
+    "Construire une formule conditionnelle avec SI(condition; valeur_si_vrai; valeur_si_faux)",
+    "Choisir le type de graphique adapté (histogramme, courbe, secteurs) selon la nature des données",
+  ],
+  blocks: [
+    {
+      type: "paragraph",
+      title: "Pourquoi le tableur tombe dès le 1er devoir de synthèse",
+      text: "Dans une feuille de calcul, chaque cellule est repérée par sa colonne (lettre) et sa ligne (numéro), comme B4. Une formule commence toujours par le signe = et se recalcule automatiquement dès qu'une donnée source change : tout l'enjeu au bac est d'écrire une seule formule recopiable vers le bas ou vers la droite.",
+    },
+    {
+      type: "table",
+      title: "Les références de cellules lors d'une recopie",
+      head: ["Écriture", "Type de référence", "Comportement à la recopie", "Cas d'usage typique"],
+      rows: [
+        ["B2", "Relative", "Colonne et ligne s'adaptent", "Prix unitaire × quantité sur chaque ligne (=B2*C2)"],
+        ["$B$1", "Absolue", "Ni la colonne ni la ligne ne bougent", "Taux de TVA ou coefficient fixe stocké dans B1"],
+        ["$B2", "Mixte (colonne figée)", "Seule la ligne change", "Tableau à double entrée : colonne de référence fixe"],
+        ["B$1", "Mixte (ligne figée)", "Seule la colonne change", "En-tête de coefficients sur la ligne 1"],
+      ],
+    },
+    {
+      type: "formula",
+      title: "Les 6 formules incontournables à connaître par cœur",
+      expression:
+        "=SOMME(B2:B15)          → additionne toute la plage de B2 à B15\n=MOYENNE(C2:C30)        → moyenne arithmétique de la plage\n=MAX(C2:C30) / =MIN(...) → valeur maximale ou minimale\n=SI(D2>=10; \"Admis\"; \"Ajourné\")\n=NB.SI(D2:D30; \">=10\")  → compte les cellules vérifiant le critère",
+      note: "Attention au séparateur d'arguments (souvent ; en configuration francophone) et aux guillemets autour du texte ou du critère de NB.SI.",
+    },
+    {
+      type: "steps",
+      title: "Méthode — réussir une question de formule à recopier",
+      items: [
+        "Identifier la cellule où l'on saisit la première formule (par exemple E2) et le sens de recopie (par exemple de E2 vers E10).",
+        "Écrire la formule pour la première ligne avec les adresses exactes des cellules utilisées.",
+        "Pour chaque cellule de la formule, se demander : doit-elle descendre d'une ligne quand je recopie ? Si non, bloquer avec $.",
+        "Vérifier mentalement ce que devient la formule sur la ligne suivante (E3) avant de valider.",
+      ],
+    },
+    {
+      type: "callout",
+      tone: "info",
+      title: "Quel graphique choisir ?",
+      text: "Histogramme / barres : comparer des effectifs ou des valeurs entre catégories. Courbe : suivre une évolution dans le temps. Secteurs (camembert) : illustrer la répartition en pourcentages d'un total unique.",
+    },
+  ],
+  keyPoints: [
+    "Toute formule commence obligatoirement par le symbole =.",
+    "Le symbole $ fige l'élément situé juste après lui : $Colonne$Ligne.",
+    "Une plage continue s'écrit avec deux-points (B2:B10), deux cellules isolées avec point-virgule (B2;D2).",
+    "Dans NB.SI(plage; critère), une condition numérique s'écrit entre guillemets : \">=12\".",
+  ],
+  pitfalls: [
+    "Oublier le signe = en début de formule sur la copie (la cellule n'affiche alors que du texte).",
+    "Écrire =B2+B3+B4+... au lieu d'utiliser =SOMME(B2:B20), ce qui fait perdre les points de méthode.",
+    "Oublier de figer la cellule d'un taux fixe (TVA, remise, total général) avec $ avant recopie.",
+  ],
+  flashcards: [
+    {
+      question: "On saisit =B2*$C$1 en D2 puis on recopie vers le bas en D3. Qu'obtient-on en D3 ?",
+      answer: "=B3*$C$1 : B2 est relative donc passe à B3, tandis que $C$1 est absolue et reste fixe.",
+    },
+    {
+      question: "Quelle formule compte le nombre d'élèves ayant au moins 10 dans la plage E2:E35 ?",
+      answer: "=NB.SI(E2:E35; \">=10\").",
+    },
+    {
+      question: "Différence entre B2:B5 et B2;B5 dans =SOMME(...) ?",
+      answer: "B2:B5 désigne les 4 cellules B2, B3, B4 et B5 ; B2;B5 désigne uniquement les 2 cellules B2 et B5.",
+    },
+  ],
+  tags: ["tableur", "excel", "formules", "référence absolue", "graphiques"],
+};
+
 const infoAlgorithmique: LessonSeed = {
   slug: "algorithmique-python",
   subjectSlug: "informatique",
@@ -573,7 +658,7 @@ const infoAlgorithmique: LessonSeed = {
     "Décomposer un problème, choisir une structure de contrôle, écrire une fonction correcte et la tester sur des cas limites : la démarche attendue en informatique.",
   level: "Bac · Toutes sections scientifiques",
   durationMin: 30,
-  orderIndex: 1,
+  orderIndex: 2,
   objectives: [
     "Traduire un énoncé en algorithme séquentiel avec entrées, traitement, sorties",
     "Choisir entre boucle bornée for et boucle conditionnelle while",
@@ -664,7 +749,7 @@ const infoSQL: LessonSeed = {
     "Lire un schéma relationnel, identifier clés primaires et étrangères, puis écrire des requêtes SELECT simples, avec jointures et calculs d'agrégats.",
   level: "Bac · Toutes sections",
   durationMin: 26,
-  orderIndex: 2,
+  orderIndex: 3,
   objectives: [
     "Distinguer entité, attribut, clé primaire et clé étrangère",
     "Écrire une requête de sélection avec conditions et tri",
@@ -825,6 +910,7 @@ export const scienceLessons: LessonSeed[] = [
   physiqueNoyaux,
   svtGenetique,
   svtImmuno,
+  infoTableur,
   infoAlgorithmique,
   infoSQL,
   technoChaine,
