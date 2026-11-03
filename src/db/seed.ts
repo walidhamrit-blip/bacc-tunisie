@@ -17,6 +17,7 @@ import { lessonsSeed } from "@/db/content/lessons-humanities";
 import { exercisesSeed } from "@/db/content/exercises";
 import { examsSeed } from "@/db/content/exams";
 import { quizzesSeed } from "@/db/content/quizzes";
+import { INIT_SQL_STATEMENTS } from "@/db/init-sql";
 
 const DEMO_NAME = "Yassine Ben Salah";
 const DEMO_SECTION = "Sciences expérimentales";
@@ -36,7 +37,27 @@ async function countRows(table: typeof subjects | typeof lessons | typeof quizze
   return row?.count ?? 0;
 }
 
+/**
+ * Crée les tables si elles n'existent pas encore.
+ * Utile quand le projet Vercel est déployé sans avoir lancé `npm run db:push`
+ * (base Neon neuve) : l'application s'auto-initialise au premier chargement.
+ * Chaque instruction est idempotente (IF NOT EXISTS).
+ */
+export async function ensureSchema(): Promise<void> {
+  for (const statement of INIT_SQL_STATEMENTS) {
+    try {
+      await db.execute(sql.raw(statement));
+    } catch (error) {
+      // 42P07 / 42710 : objet déjà présent (course entre deux instances) → on ignore.
+      const code = (error as { code?: string }).code;
+      if (code !== "42P07" && code !== "42710" && code !== "42P16") throw error;
+    }
+  }
+}
+
 async function doSeed() {
+  await ensureSchema();
+
   const [subjectCount, lessonCount, quizCount] = await Promise.all([
     countRows(subjects),
     countRows(lessons),
@@ -158,4 +179,9 @@ export function ensureSeeded(): Promise<void> {
     });
   }
   return globalForSeed.__bacSeedPromise;
+}
+
+/** Remise à zéro de l'état initialisé : utile après un changement de schéma. */
+export function resetSeedCache(): void {
+  globalForSeed.__bacSeedPromise = undefined;
 }

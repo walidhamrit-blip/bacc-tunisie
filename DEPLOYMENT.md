@@ -22,8 +22,13 @@ sur **Vercel** avec une base **Neon**.
 
 ## 2. Créer les tables dans Neon
 
-Les tables sont créées à partir du schéma Drizzle (`src/db/schema.ts`).
-Une migration SQL de référence est déjà versionnée dans `drizzle/0000_init.sql`.
+**L'application crée elle-même ses tables au premier chargement** (`ensureSchema()` dans
+`src/db/seed.ts` exécute un schéma idempotent, `IF NOT EXISTS`). Tu peux donc déployer
+directement sur une base Neon vide : au premier hit, les 11 tables sont créées puis le
+contenu pédagogique (13 matières, 18 cours, exercices, examens, quiz) et l'élève de démo
+sont insérés.
+
+Si tu préfères maîtriser la migration depuis ta machine :
 
 ### Option A — depuis ta machine (recommandé)
 
@@ -65,11 +70,23 @@ Si tu préfères ne pas passer par l'intégration, ajoute la variable d'environn
 
 Puis **Redeploy**, car Vercel n'applique pas les variables à un déploiement déjà construit.
 
-## 4. Vérifier que ça marche
+## 4. Vérifier que ça marche — et diagnostiquer
 
-- `https://<ton-projet>.vercel.app/api/health` → doit répondre `{"ok":true}`
-  (une réponse 500 = `DATABASE_URL` absente ou endpoint Neon injoignable).
-- La page d'accueil doit afficher les matières et le tableau de bord de l'élève de démo.
+Ouvre `https://<ton-projet>.vercel.app/api/health`. C'est un diagnostic complet :
+
+| Réponse | Signification | Solution |
+| --- | --- | --- |
+| `{"ok":true,"schema":"ready","content":{...}}` | Tout va bien | — |
+| `{"ok":false,"step":"env"}` | `DATABASE_URL` absente du déploiement | Ajouter la variable **puis Redeploy** |
+| `{"ok":false,"step":"connection"}` | URL Neon fausse / base injoignable | Utiliser l'URL *pooled* + `sslmode=require` |
+| `{"ok":false,"step":"schema"}` | Schéma non créable | Lancer `npm run db:push` avec la même URL |
+
+En cas d'erreur, les pages affichent désormais un écran explicite (avec bouton « Réessayer »
+et lien vers `/api/health`) au lieu de « This page couldn't load ».
+
+> ⚠️ **Cause n°1 du message « This page couldn't load » sur Vercel** : le projet a été déployé
+> sans `DATABASE_URL`. Ajouter la variable ne suffit pas — il faut **Redeploy**, car les
+> variables d'environnement sont figées au moment du build pour les fonctions déjà déployées.
 
 ## 5. Points d'attention spécifiques à ce projet
 
