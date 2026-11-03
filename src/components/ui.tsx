@@ -4,10 +4,10 @@ import type { LevelLabel } from "@/lib/data";
 
 const TONE_STYLE: Record<LevelLabel["tone"], { bg: string; color: string }> = {
   emerald: { bg: "var(--green-soft)", color: "var(--green)" },
-  sky: { bg: "var(--sky-soft)", color: "#1b45b8" },
-  violet: { bg: "#f1eafe", color: "var(--violet)" },
-  amber: { bg: "var(--gold-soft)", color: "#8a6200" },
-  slate: { bg: "#eef0ee", color: "#47534d" },
+  sky: { bg: "var(--sky-soft)", color: "var(--blue)" },
+  violet: { bg: "var(--violet-soft)", color: "var(--violet)" },
+  amber: { bg: "var(--gold-soft)", color: "var(--gold-ink)" },
+  slate: { bg: "var(--slate-soft)", color: "var(--ink-soft)" },
 };
 
 export function PageHeader({
@@ -86,9 +86,9 @@ export function SubjectGlyph({
       style={{
         width: size,
         height: size,
-        background: `${subject.accent}14`,
+        background: `${subject.accent}1f`,
         color: subject.accent,
-        border: `1px solid ${subject.accent}26`,
+        border: `1px solid ${subject.accent}38`,
         fontSize: size * 0.45,
       }}
       aria-hidden
@@ -130,9 +130,21 @@ export function Callout({
   children: ReactNode;
 }) {
   const styles = {
-    info: { background: "#f3f7ff", border: "#cfdcff", color: "#1b3f9a" },
-    warn: { background: "#fff6e9", border: "#f3ddb5", color: "#7a4b04" },
-    tip: { background: "var(--green-soft)", border: "#cbe2d2", color: "var(--green)" },
+    info: {
+      background: "var(--callout-info-bg)",
+      border: "var(--callout-info-border)",
+      color: "var(--callout-info-ink)",
+    },
+    warn: {
+      background: "var(--callout-warn-bg)",
+      border: "var(--callout-warn-border)",
+      color: "var(--callout-warn-ink)",
+    },
+    tip: {
+      background: "var(--green-soft)",
+      border: "var(--green-border)",
+      color: "var(--green)",
+    },
   }[tone];
   return (
     <div className="rounded-2xl border p-4" style={{ background: styles.background, borderColor: styles.border }}>
@@ -175,7 +187,7 @@ export function DifficultyDots({ level }: { level: number }) {
         <span
           key={dot}
           className="h-1.5 w-1.5 rounded-full"
-          style={{ background: dot <= level ? "var(--brand)" : "#ddd4c4" }}
+          style={{ background: dot <= level ? "var(--brand)" : "var(--dot-muted)" }}
         />
       ))}
     </span>

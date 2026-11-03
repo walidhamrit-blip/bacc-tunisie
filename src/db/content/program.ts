@@ -140,7 +140,9 @@ const ANGLAIS_TC = sub("anglais", "×1", [
 
 const INFO_TC = sub("informatique", "×0.5", [
   th("info-bureautique", "Outils numériques", [
-    ch("info-tableur", "Tableur : formules, fonctions et graphiques", "T1"),
+    ch("info-tableur", "Tableur : formules, fonctions et graphiques", "T1", {
+      lesson: "tableur-formules-graphiques",
+    }),
     ch("info-web", "Recherche, sécurité et identité numérique", "T2"),
     ch("info-algorithme", "Algorithmique et Python : construire un programme fiable", "T3", {
       lesson: "algorithmique-python",
@@ -468,9 +470,9 @@ const TECHNOLOGIE = sub(
 /*  Informatique (algorithme + bases de données)                       */
 /* ------------------------------------------------------------------ */
 
-const ALGO = sub(
+const INFO_SPECIALITE = sub(
   "informatique",
-  "×3",
+  "×3 (Algo) · ×1.5 (BDD & TIC)",
   [
     th("info-algo-bases", "Algorithmique et programmation", [
       ch("info-python", "Algorithmique et Python : construire un programme fiable", "T1", {
@@ -489,30 +491,24 @@ const ALGO = sub(
       ch("info-chaines", "Chaînes de caractères", "T2"),
       ch("info-fichiers", "Fichiers et enregistrements", "T3"),
     ]),
+    th("info-bdd", "Bases de données", [
+      ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1"),
+      ch("info-mcd", "Conception : modèle conceptuel et modèle logique", "T2"),
+      ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2"),
+      ch("info-sql", "Bases de données relationnelles et requêtes SQL", "T3", {
+        lesson: "bases-donnees-sql",
+        quiz: "quiz-info-sql",
+      }),
+      ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3"),
+    ]),
+    th("info-tic", "Systèmes et technologies de l'information", [
+      ch("info-systeme", "Architecture matérielle et systèmes d'exploitation", "T1"),
+      ch("info-reseaux", "Réseaux, internet et protocoles", "T2"),
+      ch("info-securite", "Sécurité informatique et protection des données", "T3"),
+    ]),
   ],
   { specialty: true },
 );
-
-const BDD = sub("informatique", "×1.5", [
-  th("info-bdd", "Bases de données", [
-    ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1"),
-    ch("info-mcd", "Conception : modèle conceptuel et modèle logique", "T2"),
-    ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2"),
-    ch("info-sql", "Bases de données relationnelles et requêtes SQL", "T3", {
-      lesson: "bases-donnees-sql",
-      quiz: "quiz-info-sql",
-    }),
-    ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3"),
-  ]),
-]);
-
-const TIC = sub("informatique", "×1.5", [
-  th("info-tic", "Systèmes et technologies de l'information", [
-    ch("info-systeme", "Architecture matérielle et systèmes d'exploitation", "T1"),
-    ch("info-reseaux", "Réseaux, internet et protocoles", "T2"),
-    ch("info-securite", "Sécurité informatique et protection des données", "T3"),
-  ]),
-]);
 
 /* ------------------------------------------------------------------ */
 /*  Économie & Gestion                                                  */
@@ -729,7 +725,7 @@ export const PROGRAM: ProgramSection[] = [
     section: "Informatique",
     motto: "Algorithmique et bases de données au premier plan, avec un socle scientifique solide.",
     rhythm: "DS1 en décembre (algorithmes de tri, limites) · DS2 en mars (récursivité, conception de bases) · DS3 en mai (approximation, SQL, intégrales) · bac en juin.",
-    subjects: [ALGO, BDD, MATHS_INF, PHYSIQUE_INF, TIC, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC],
+    subjects: [INFO_SPECIALITE, MATHS_INF, PHYSIQUE_INF, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC],
   },
   {
     section: "Économie & Gestion",
@@ -795,26 +791,77 @@ export function findChaptersByLesson(lessonSlug: string): ProgramChapterRef[] {
   );
 }
 
+const PERIOD_RANK: Record<PeriodId, number> = { T1: 1, T2: 2, T3: 3, REV: 4 };
+
+/**
+ * Retourne le(s) trimestre(s) où une fiche est évaluée :
+ * - si une filière est sélectionnée, renvoie uniquement le trimestre de cette filière ;
+ * - sinon, renvoie tous les trimestres où cette fiche apparaît dans le programme officiel.
+ */
+export function lessonPeriodsForFilter(
+  lessonSlug: string,
+  section?: string | null,
+  fallbackPeriod?: string,
+): PeriodId[] {
+  const refs = findChaptersByLesson(lessonSlug);
+  const filteredRefs = section ? refs.filter((ref) => ref.section === section) : refs;
+
+  if (filteredRefs.length > 0) {
+    const unique = Array.from(new Set(filteredRefs.map((ref) => ref.chapter.period)));
+    return unique.sort((a, b) => PERIOD_RANK[a] - PERIOD_RANK[b]);
+  }
+
+  const fb = (fallbackPeriod as PeriodId | undefined) ?? "T1";
+  return [fb in PERIOD_RANK ? fb : "T1"];
+}
+
+/** Trimestre principal à afficher pour une fiche dans le contexte d'une filière (ou au plus tôt). */
+export function lessonDisplayPeriod(
+  lessonSlug: string,
+  section?: string | null,
+  fallbackPeriod?: string,
+): PeriodId {
+  return lessonPeriodsForFilter(lessonSlug, section, fallbackPeriod)[0] ?? "T1";
+}
+
 /**
  * Métadonnées de programme à persister sur chaque fiche de cours :
- * trimestre officiel et filières où la fiche est au programme.
+ * trimestre officiel (en priorisant la matière de spécialité / le trimestre le plus tôt)
+ * et filières où la fiche est au programme.
  */
 export function lessonProgramMeta(): Map<string, { period: PeriodId; sections: SectionName[] }> {
-  const meta = new Map<string, { period: PeriodId; sections: SectionName[] }>();
+  const meta = new Map<string, { period: PeriodId; specialty: boolean; sections: SectionName[] }>();
   for (const entry of PROGRAM) {
     for (const subject of entry.subjects) {
       for (const theme of subject.themes) {
         for (const chapter of theme.chapters) {
           if (!chapter.lessonSlug) continue;
+          const isSpecialty = Boolean(subject.specialty);
           const current = meta.get(chapter.lessonSlug);
           if (!current) {
-            meta.set(chapter.lessonSlug, { period: chapter.period, sections: [entry.section] });
-          } else if (!current.sections.includes(entry.section)) {
-            current.sections.push(entry.section);
+            meta.set(chapter.lessonSlug, {
+              period: chapter.period,
+              specialty: isSpecialty,
+              sections: [entry.section],
+            });
+          } else {
+            if (!current.sections.includes(entry.section)) {
+              current.sections.push(entry.section);
+            }
+            const shouldPromotePeriod =
+              (isSpecialty && !current.specialty) ||
+              (isSpecialty === current.specialty &&
+                PERIOD_RANK[chapter.period] < PERIOD_RANK[current.period]);
+            if (shouldPromotePeriod) {
+              current.period = chapter.period;
+              current.specialty = isSpecialty;
+            }
           }
         }
       }
     }
   }
-  return meta;
+  return new Map(
+    Array.from(meta.entries()).map(([slug, { period, sections }]) => [slug, { period, sections }]),
+  );
 }

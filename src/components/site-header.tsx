@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/programme", label: "Programme" },
@@ -20,7 +21,7 @@ export function SiteHeader() {
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[rgba(251,247,239,0.88)] backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[var(--brand)] text-lg text-white shadow-[0_8px_18px_-10px_rgba(200,16,46,0.9)]">
@@ -43,8 +44,8 @@ export function SiteHeader() {
               href={item.href}
               className={`rounded-full px-3 py-2 text-[0.84rem] font-semibold transition ${
                 isActive(item.href)
-                  ? "bg-[var(--ink)] text-white"
-                  : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]"
+                  ? "bg-[var(--ink)] text-[var(--cream)]"
+                  : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
               }`}
             >
               {item.label}
@@ -53,6 +54,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link href="/correction" className="btn btn-primary btn-sm hidden sm:inline-flex">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden>
               <path d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -80,7 +82,9 @@ export function SiteHeader() {
             key={item.href}
             href={item.href}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.78rem] font-semibold ${
-              isActive(item.href) ? "bg-[var(--ink)] text-white" : "bg-white text-[var(--ink-soft)]"
+              isActive(item.href)
+                ? "bg-[var(--ink)] text-[var(--cream)]"
+                : "bg-[var(--paper)] text-[var(--ink-soft)]"
             }`}
           >
             {item.label}
