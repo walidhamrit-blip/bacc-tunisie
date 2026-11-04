@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
+  bacSimulations,
   communitySheetLikes,
   communitySheets,
   corrections,
@@ -17,6 +18,12 @@ import {
   students,
   subjects,
 } from "@/db/schema";
+import {
+  clampNote20,
+  computeBacAndOrientation,
+  formatFrDecimal,
+  getSectionBacConfig,
+} from "@/lib/bac-calculator";
 import {
   buildCommunitySheetSlug,
   validateCommunitySheetInput,
@@ -45,6 +52,13 @@ export type AccountActionState = {
   errors: string[];
   message: string;
   syncCode?: string;
+};
+
+export type SaveSimulationState = {
+  ok: boolean;
+  errors: string[];
+  message: string;
+  savedAt?: number;
 };
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -468,6 +482,131 @@ export async function recordManualScore(formData: FormData) {
 }
 
 /**
+ * Sauvegarde une simulation officielle de Moyenne du Bac (`MG`) et Score d'Orientation (`FG`).
+ * Si l'élève dispose d'un abonnement mono-section verrouillé (`isLockedStudent`), la section
+ * est strictement imposée côté serveur sur `student.section` (anti-partage de compte).
+ */
+export async function saveBacSimulation(
+  _prevState: SaveSimulationState,
+  formData: FormData,
+): Promise<SaveSimulationState> {
+  const student = await getStudent();
+
+  const effectiveSection = isLockedStudent(student)
+    ? normalizeSection(student.section)
+    : normalizeSection(String(formData.get("section") ?? student.section));
+
+  const rawLabel = String(formData.get("label") ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 70);
+
+  const label = rawLabel.length >= 2 ? rawLabel : `Simulation ${effectiveSection}`;
+
+  let parsedNotes: Record<string, unknown> = {};
+  try {
+    const rawJson = String(formData.get("notesJson") ?? "{}");
+    const candidate = JSON.parse(rawJson);
+    if (candidate && typeof candidate === "object") {
+      parsedNotes = candidate as Record<string, unknown>;
+    }
+  } catch {
+    return {
+      ok: false,
+      errors: ["Impossible de lire les notes saisies. Réessaie en vérifiant tes valeurs."],
+      message: "",
+    };
+  }
+
+  const config = getSectionBacConfig(effectiveSection);
+  const sanitizedNotes: Record<string, number> = {};
+  for (const sub of config.subjects) {
+    const rawVal = parsedNotes[sub.key];
+    const num =
+      typeof rawVal === "number"
+        ? rawVal
+        : Number.parseFloat(String(rawVal ?? "10").replace(",", "."));
+    sanitizedNotes[sub.key] = clampNote20(num);
+  }
+
+  const optionEnabled =
+    formData.get("optionEnabled") === "true" || formData.get("optionEnabled") === "on";
+  const optionName =
+    String(formData.get("optionName") ?? "Espagnol")
+      .trim()
+      .slice(0, 30) || "Espagnol";
+  const optionNote20 = clampNote20(
+    Number.parseFloat(String(formData.get("optionNote20") ?? "12").replace(",", ".")),
+  );
+  const sportDispense =
+    formData.get("sportDispense") === "true" || formData.get("sportDispense") === "on";
+
+  const calc = computeBacAndOrientation({
+    section: effectiveSection,
+    notes: sanitizedNotes,
+    optionEnabled,
+    optionName,
+    optionNote20,
+    sportDispense,
+  });
+
+  const existingCountRow = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(bacSimulations)
+    .where(eq(bacSimulations.studentId, student.id));
+
+  const existingCount = existingCountRow[0]?.count ?? 0;
+  const xpEarned = existingCount === 0 ? 20 : existingCount < 5 ? 5 : 0;
+
+  await db.insert(bacSimulations).values({
+    studentId: student.id,
+    label,
+    section: effectiveSection,
+    notes: sanitizedNotes,
+    optionEnabled: calc.optionEnabled,
+    optionName: calc.optionName,
+    optionNoteHundredths: Math.round(calc.optionNote20 * 100),
+    sportDispense: calc.sportDispense,
+    mgHundredths: Math.round(calc.mg20 * 100),
+    fgHundredths: Math.round(calc.fgScore * 100),
+    mentionLabel: calc.verdict.mentionLabel,
+  });
+
+  if (xpEarned > 0) {
+    await awardStudentXp(student, xpEarned);
+  }
+
+  revalidatePath("/calculateur");
+  revalidatePath("/evaluation");
+
+  const xpSuffix = xpEarned > 0 ? ` (+${xpEarned} XP)` : "";
+  return {
+    ok: true,
+    errors: [],
+    message: `Simulation « ${label} » sauvegardée${xpSuffix} : MG = ${formatFrDecimal(
+      calc.mg20,
+    )}/20 · Score FG = ${formatFrDecimal(calc.fgScore)} pts.`,
+    savedAt: Date.now(),
+  };
+}
+
+export async function deleteBacSimulation(simulationId: number) {
+  if (!Number.isInteger(simulationId) || simulationId <= 0) return;
+
+  const student = await getStudent();
+  await db
+    .delete(bacSimulations)
+    .where(
+      and(
+        eq(bacSimulations.id, simulationId),
+        eq(bacSimulations.studentId, student.id),
+      ),
+    );
+
+  revalidatePath("/calculateur");
+}
+
+/**
  * Soumission d'une fiche courte de révision par un élève avec validation simple automatique
  * et placement dans la file de modération avant publication publique.
  */
@@ -640,7 +779,7 @@ export async function toggleCommunitySheetLike(sheetId: number): Promise<{
       .set({
         likesCount: sql`${communitySheets.likesCount} + 1`,
       })
-      .where(eq(communitySheets.id, sheetId));
+      .where(eq(communitySheets.id, sheetId))
     liked = true;
   }
 
@@ -692,6 +831,7 @@ export async function resetStudentProgress() {
   await db.delete(examProgress).where(eq(examProgress.studentId, student.id));
   await db.delete(quizAttempts).where(eq(quizAttempts.studentId, student.id));
   await db.delete(scoreHistory).where(eq(scoreHistory.studentId, student.id));
+  await db.delete(bacSimulations).where(eq(bacSimulations.studentId, student.id));
   await db.delete(corrections).where(eq(corrections.studentId, student.id));
   await db
     .update(students)

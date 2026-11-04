@@ -14,6 +14,7 @@ const NAV = [
   { href: "/examens", label: "Examens" },
   { href: "/bac-blanc", label: "Bac Blanc" },
   { href: "/quiz", label: "Quiz" },
+  { href: "/calculateur", label: "Calculateur FG" },
   { href: "/organisation", label: "Organisation" },
   { href: "/correction", label: "Corriger PDF" },
 ];
@@ -26,7 +27,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2.5 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[var(--brand)] text-lg text-white shadow-[0_8px_18px_-10px_rgba(200,16,46,0.9)]">
             <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden>
@@ -41,12 +42,12 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-0.5 xl:flex">
+        <nav className="no-scrollbar hidden items-center gap-0.5 overflow-x-auto xl:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-full px-2 py-1.5 text-[0.76rem] font-semibold transition ${
+              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.74rem] font-semibold transition ${
                 isActive(item.href)
                   ? "bg-[var(--ink)] text-[var(--cream)]"
                   : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"

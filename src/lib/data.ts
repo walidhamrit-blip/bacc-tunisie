@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
+  bacSimulations,
   communitySheetLikes,
   communitySheets,
   corrections,
@@ -32,6 +33,7 @@ export type Exercise = typeof exercises.$inferSelect;
 export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
 export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
+export type BacSimulation = typeof bacSimulations.$inferSelect;
 export type CommunitySheet = typeof communitySheets.$inferSelect;
 
 export type StudentSessionStatus =
@@ -358,6 +360,32 @@ export async function getQuiz(slug: string): Promise<Quiz | null> {
     return null;
   }
   return quiz;
+}
+
+export async function listBacSimulations(): Promise<BacSimulation[]> {
+  await ensureSeeded();
+  const student = await getStudent();
+
+  if (isLockedStudent(student)) {
+    return db
+      .select()
+      .from(bacSimulations)
+      .where(
+        and(
+          eq(bacSimulations.studentId, student.id),
+          eq(bacSimulations.section, student.section),
+        ),
+      )
+      .orderBy(desc(bacSimulations.createdAt))
+      .limit(15);
+  }
+
+  return db
+    .select()
+    .from(bacSimulations)
+    .where(eq(bacSimulations.studentId, student.id))
+    .orderBy(desc(bacSimulations.createdAt))
+    .limit(15);
 }
 
 export async function getDashboard() {

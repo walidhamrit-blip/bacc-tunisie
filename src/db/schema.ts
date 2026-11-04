@@ -258,6 +258,33 @@ export const scoreHistory = pgTable(
 );
 
 /**
+ * Simulations sauvegardées du Calculateur Officiel de la Moyenne du Bac (`MG`)
+ * et du Score d'Orientation Universitaire (`FG` — Formule Globale).
+ */
+export const bacSimulations = pgTable(
+  "bac_simulations",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id").notNull(),
+    label: text("label").notNull(),
+    section: text("section").notNull(),
+    notes: jsonb("notes").$type<Record<string, number>>().notNull().default({}),
+    optionEnabled: boolean("option_enabled").notNull().default(false),
+    optionName: text("option_name").notNull().default("Espagnol"),
+    /** Note de l'option sur 20 exprimée en centièmes (ex: 1450 = 14,50 / 20). */
+    optionNoteHundredths: integer("option_note_hundredths").notNull().default(1200),
+    sportDispense: boolean("sport_dispense").notNull().default(false),
+    /** Moyenne générale MG exprimée en centièmes (ex: 1425 = 14,25 / 20). */
+    mgHundredths: integer("mg_hundredths").notNull().default(0),
+    /** Score Formule Globale FG exprimé en centièmes (ex: 14860 = 148,60 pts). */
+    fgHundredths: integer("fg_hundredths").notNull().default(0),
+    mentionLabel: text("mention_label").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("bac_simulations_student_created_idx").on(table.studentId, table.createdAt)],
+);
+
+/**
  * Fiches courtes de révision soumises par les élèves de la communauté
  * avec workflow de validation simple (`pending` -> `approved` / `rejected`).
  */
