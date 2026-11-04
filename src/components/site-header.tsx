@@ -59,15 +59,9 @@ export function SiteHeader() {
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
-          <Link href="/correction" className="btn btn-primary btn-sm hidden sm:inline-flex">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden>
-              <path d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Joindre un PDF
-          </Link>
           <Link
             href="/evaluation"
-            className={`btn btn-sm ${
+            className={`btn btn-sm hidden sm:inline-flex ${
               isActive("/evaluation") ? "btn-primary" : "btn-ghost"
             }`}
             aria-label="Tableau d'évaluation de mon niveau"
@@ -75,7 +69,17 @@ export function SiteHeader() {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
               <path d="M4 20V10m5 10V4m5 16v-7m5 7V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            <span className="hidden xs:inline sm:inline">Mon niveau</span>
+            <span>Mon niveau</span>
+          </Link>
+          <Link
+            href="/mon-compte"
+            className={`btn btn-sm ${
+              isActive("/mon-compte") ? "btn-dark" : "btn-primary"
+            }`}
+            aria-label="Mon compte élève et inscription mono-section"
+          >
+            <span aria-hidden>🔒</span>
+            <span>Mon compte</span>
           </Link>
         </div>
       </div>
@@ -94,6 +98,16 @@ export function SiteHeader() {
             {item.label}
           </Link>
         ))}
+        <Link
+          href="/evaluation"
+          className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.78rem] font-semibold ${
+            isActive("/evaluation")
+              ? "bg-[var(--ink)] text-[var(--cream)]"
+              : "bg-[var(--paper)] text-[var(--ink-soft)]"
+          }`}
+        >
+          Mon niveau
+        </Link>
       </div>
     </header>
   );

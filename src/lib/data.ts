@@ -1,4 +1,5 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
   communitySheetLikes,
@@ -18,6 +19,11 @@ import {
 } from "@/db/schema";
 import { ensureSeeded } from "@/db/seed";
 import { calculateMentionProbability } from "@/lib/mention-probability";
+import {
+  DEVICE_TOKEN_COOKIE,
+  STUDENT_CODE_COOKIE,
+  isLockedStudent,
+} from "@/lib/student-session";
 
 export type Student = typeof students.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
@@ -27,6 +33,11 @@ export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
 export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
 export type CommunitySheet = typeof communitySheets.$inferSelect;
+
+export type StudentSessionStatus =
+  | "authenticated"
+  | "demo"
+  | "evicted_by_device_limit";
 
 export type LevelLabel = {
   label: string;
@@ -57,20 +68,127 @@ export type SubjectLevel = {
   level: LevelLabel;
 };
 
-export async function getStudent(): Promise<Student> {
-  await ensureSeeded();
-  const rows = await db.select().from(students).orderBy(students.id).limit(1);
-  if (rows.length > 0) return rows[0];
+async function getDemoStudent(): Promise<Student> {
+  const demoRows = await db
+    .select()
+    .from(students)
+    .where(eq(students.isDemo, true))
+    .orderBy(students.id)
+    .limit(1);
+
+  if (demoRows.length > 0) return demoRows[0];
+
   const [created] = await db
     .insert(students)
-    .values({ name: "Élève de bac", section: "Sciences expérimentales" })
+    .values({
+      name: "Élève de bac (Démo)",
+      section: "Sciences expérimentales",
+      isDemo: true,
+      sectionLocked: false,
+    })
     .returning();
   return created;
 }
 
+export async function getStudentSessionInfo(): Promise<{
+  student: Student;
+  sessionStatus: StudentSessionStatus;
+  currentDeviceToken: string | null;
+}> {
+  await ensureSeeded();
+
+  let syncCode = "";
+  let deviceToken = "";
+  try {
+    const cookieStore = await cookies();
+    syncCode = cookieStore.get(STUDENT_CODE_COOKIE)?.value?.trim() ?? "";
+    deviceToken = cookieStore.get(DEVICE_TOKEN_COOKIE)?.value?.trim() ?? "";
+  } catch {
+    syncCode = "";
+    deviceToken = "";
+  }
+
+  if (syncCode) {
+    const rows = await db
+      .select()
+      .from(students)
+      .where(and(eq(students.syncCode, syncCode), eq(students.isDemo, false)))
+      .limit(1);
+
+    if (rows.length > 0) {
+      const account = rows[0];
+      const allowedTokens = account.deviceTokens ?? [];
+      if (
+        allowedTokens.length === 0 ||
+        (deviceToken.length > 0 && allowedTokens.includes(deviceToken))
+      ) {
+        return {
+          student: account,
+          sessionStatus: "authenticated",
+          currentDeviceToken: deviceToken || null,
+        };
+      }
+
+      const demo = await getDemoStudent();
+      return {
+        student: demo,
+        sessionStatus: "evicted_by_device_limit",
+        currentDeviceToken: null,
+      };
+    }
+  }
+
+  const demo = await getDemoStudent();
+  return {
+    student: demo,
+    sessionStatus: "demo",
+    currentDeviceToken: null,
+  };
+}
+
+export async function getStudent(): Promise<Student> {
+  const { student } = await getStudentSessionInfo();
+  return student;
+}
+
+/**
+ * Si l'élève est inscrit avec un abonnement personnel verrouillé (`sectionLocked = true`),
+ * renvoie son unique section autorisée ainsi que l'ensemble strict des matières officielles
+ * de cette filière pour empêcher l'utilisation multi-sections d'un même compte.
+ */
+async function getLockedSectionScope(): Promise<{
+  lockedSection: string | null;
+  allowedSubjectSlugs: Set<string> | null;
+}> {
+  const student = await getStudent();
+  if (!isLockedStudent(student)) {
+    return { lockedSection: null, allowedSubjectSlugs: null };
+  }
+
+  const allSubjects = await db.select().from(subjects);
+  const allowed = new Set(
+    allSubjects
+      .filter((sub) => sub.sections.includes(student.section))
+      .map((sub) => sub.slug),
+  );
+
+  return {
+    lockedSection: student.section,
+    allowedSubjectSlugs: allowed,
+  };
+}
+
 export async function listSubjects(section?: string | null): Promise<Subject[]> {
   await ensureSeeded();
-  const rows = await db.select().from(subjects).orderBy(subjects.orderIndex);
+  const [rows, scope] = await Promise.all([
+    db.select().from(subjects).orderBy(subjects.orderIndex),
+    getLockedSectionScope(),
+  ]);
+
+  if (scope.lockedSection) {
+    return rows.filter((row) => row.sections.includes(scope.lockedSection!));
+  }
+
   if (section && section !== "Toutes les sections") {
     return rows.filter((row) => row.sections.includes(section));
   }
@@ -79,76 +197,167 @@ export async function listSubjects(section?: string | null): Promise<Subject[]> 
 
 export async function getSubject(slug: string): Promise<Subject | null> {
   await ensureSeeded();
-  const rows = await db.select().from(subjects).where(eq(subjects.slug, slug)).limit(1);
-  return rows[0] ?? null;
+  const [rows, scope] = await Promise.all([
+    db.select().from(subjects).where(eq(subjects.slug, slug)).limit(1),
+    getLockedSectionScope(),
+  ]);
+  const subject = rows[0] ?? null;
+  if (!subject) return null;
+  if (scope.allowedSubjectSlugs && !scope.allowedSubjectSlugs.has(subject.slug)) {
+    return null;
+  }
+  return subject;
 }
 
 export async function listLessons(subjectSlug?: string | null): Promise<Lesson[]> {
   await ensureSeeded();
   const query = db.select().from(lessons);
-  const rows = subjectSlug
-    ? await query.where(eq(lessons.subjectSlug, subjectSlug)).orderBy(lessons.orderIndex)
-    : await query.orderBy(lessons.subjectSlug, lessons.orderIndex);
-  return rows;
+  const [rows, scope] = await Promise.all([
+    subjectSlug
+      ? query.where(eq(lessons.subjectSlug, subjectSlug)).orderBy(lessons.orderIndex)
+      : query.orderBy(lessons.subjectSlug, lessons.orderIndex),
+    getLockedSectionScope(),
+  ]);
+
+  if (!scope.lockedSection || !scope.allowedSubjectSlugs) {
+    return rows;
+  }
+
+  return rows.filter(
+    (row) =>
+      scope.allowedSubjectSlugs!.has(row.subjectSlug) &&
+      (row.sections.length === 0 || row.sections.includes(scope.lockedSection!)),
+  );
 }
 
 /** Fiches de cours d'une filière (section du bac), triées par trimestre puis matière. */
 export async function listLessonsForSection(section?: string | null): Promise<Lesson[]> {
   await ensureSeeded();
-  const rows = await db.select().from(lessons).orderBy(lessons.subjectSlug, lessons.orderIndex);
-  if (!section || section === "Toutes les sections") return rows;
+  const [rows, scope] = await Promise.all([
+    db.select().from(lessons).orderBy(lessons.subjectSlug, lessons.orderIndex),
+    getLockedSectionScope(),
+  ]);
+
+  const effectiveSection = scope.lockedSection ?? section;
+  if (!effectiveSection || effectiveSection === "Toutes les sections") return rows;
+
   const periodRank: Record<string, number> = { T1: 1, T2: 2, T3: 3, REV: 4 };
   return rows
-    .filter((row) => row.sections.length === 0 || row.sections.includes(section))
+    .filter((row) => {
+      if (scope.allowedSubjectSlugs && !scope.allowedSubjectSlugs.has(row.subjectSlug)) {
+        return false;
+      }
+      return row.sections.length === 0 || row.sections.includes(effectiveSection);
+    })
     .sort((a, b) => (periodRank[a.period] ?? 9) - (periodRank[b.period] ?? 9));
 }
 
 export async function getLesson(slug: string): Promise<Lesson | null> {
   await ensureSeeded();
-  const rows = await db.select().from(lessons).where(eq(lessons.slug, slug)).limit(1);
-  return rows[0] ?? null;
+  const [rows, scope] = await Promise.all([
+    db.select().from(lessons).where(eq(lessons.slug, slug)).limit(1),
+    getLockedSectionScope(),
+  ]);
+  const lesson = rows[0] ?? null;
+  if (!lesson) return null;
+
+  if (scope.lockedSection && scope.allowedSubjectSlugs) {
+    if (!scope.allowedSubjectSlugs.has(lesson.subjectSlug)) return null;
+    if (lesson.sections.length > 0 && !lesson.sections.includes(scope.lockedSection)) {
+      return null;
+    }
+  }
+  return lesson;
 }
 
 export async function listExercises(subjectSlug?: string | null): Promise<Exercise[]> {
   await ensureSeeded();
   const query = db.select().from(exercises);
-  return subjectSlug
-    ? await query.where(eq(exercises.subjectSlug, subjectSlug)).orderBy(exercises.difficulty)
-    : await query.orderBy(exercises.subjectSlug, exercises.difficulty);
+  const [rows, scope] = await Promise.all([
+    subjectSlug
+      ? query.where(eq(exercises.subjectSlug, subjectSlug)).orderBy(exercises.difficulty)
+      : query.orderBy(exercises.subjectSlug, exercises.difficulty),
+    getLockedSectionScope(),
+  ]);
+
+  if (scope.allowedSubjectSlugs) {
+    return rows.filter((row) => scope.allowedSubjectSlugs!.has(row.subjectSlug));
+  }
+  return rows;
 }
 
 export async function getExercise(slug: string): Promise<Exercise | null> {
   await ensureSeeded();
-  const rows = await db.select().from(exercises).where(eq(exercises.slug, slug)).limit(1);
-  return rows[0] ?? null;
+  const [rows, scope] = await Promise.all([
+    db.select().from(exercises).where(eq(exercises.slug, slug)).limit(1),
+    getLockedSectionScope(),
+  ]);
+  const exercise = rows[0] ?? null;
+  if (!exercise) return null;
+  if (scope.allowedSubjectSlugs && !scope.allowedSubjectSlugs.has(exercise.subjectSlug)) {
+    return null;
+  }
+  return exercise;
 }
 
 export async function listExams(subjectSlug?: string | null): Promise<Exam[]> {
   await ensureSeeded();
   const query = db.select().from(exams);
-  return subjectSlug
-    ? await query.where(eq(exams.subjectSlug, subjectSlug)).orderBy(exams.year)
-    : await query.orderBy(exams.subjectSlug, exams.year);
+  const [rows, scope] = await Promise.all([
+    subjectSlug
+      ? query.where(eq(exams.subjectSlug, subjectSlug)).orderBy(exams.year)
+      : query.orderBy(exams.subjectSlug, exams.year),
+    getLockedSectionScope(),
+  ]);
+
+  if (scope.allowedSubjectSlugs) {
+    return rows.filter((row) => scope.allowedSubjectSlugs!.has(row.subjectSlug));
+  }
+  return rows;
 }
 
 export async function getExam(slug: string): Promise<Exam | null> {
   await ensureSeeded();
-  const rows = await db.select().from(exams).where(eq(exams.slug, slug)).limit(1);
-  return rows[0] ?? null;
+  const [rows, scope] = await Promise.all([
+    db.select().from(exams).where(eq(exams.slug, slug)).limit(1),
+    getLockedSectionScope(),
+  ]);
+  const exam = rows[0] ?? null;
+  if (!exam) return null;
+  if (scope.allowedSubjectSlugs && !scope.allowedSubjectSlugs.has(exam.subjectSlug)) {
+    return null;
+  }
+  return exam;
 }
 
 export async function listQuizzes(subjectSlug?: string | null): Promise<Quiz[]> {
   await ensureSeeded();
   const query = db.select().from(quizzes);
-  return subjectSlug
-    ? await query.where(eq(quizzes.subjectSlug, subjectSlug)).orderBy(quizzes.id)
-    : await query.orderBy(quizzes.subjectSlug, quizzes.id);
+  const [rows, scope] = await Promise.all([
+    subjectSlug
+      ? query.where(eq(quizzes.subjectSlug, subjectSlug)).orderBy(quizzes.id)
+      : query.orderBy(quizzes.subjectSlug, quizzes.id),
+    getLockedSectionScope(),
+  ]);
+
+  if (scope.allowedSubjectSlugs) {
+    return rows.filter((row) => scope.allowedSubjectSlugs!.has(row.subjectSlug));
+  }
+  return rows;
 }
 
 export async function getQuiz(slug: string): Promise<Quiz | null> {
   await ensureSeeded();
-  const rows = await db.select().from(quizzes).where(eq(quizzes.slug, slug)).limit(1);
-  return rows[0] ?? null;
+  const [rows, scope] = await Promise.all([
+    db.select().from(quizzes).where(eq(quizzes.slug, slug)).limit(1),
+    getLockedSectionScope(),
+  ]);
+  const quiz = rows[0] ?? null;
+  if (!quiz) return null;
+  if (scope.allowedSubjectSlugs && !scope.allowedSubjectSlugs.has(quiz.subjectSlug)) {
+    return null;
+  }
+  return quiz;
 }
 
 export async function getDashboard() {
@@ -379,7 +588,7 @@ export async function getBestQuizScores(studentId: number) {
 export async function getCommunitySpaceData(voterKey: string) {
   await ensureSeeded();
 
-  const [allSheets, likedRows] = await Promise.all([
+  const [allSheets, likedRows, scope] = await Promise.all([
     db
       .select()
       .from(communitySheets)
@@ -388,10 +597,15 @@ export async function getCommunitySpaceData(voterKey: string) {
       .select({ sheetId: communitySheetLikes.sheetId })
       .from(communitySheetLikes)
       .where(eq(communitySheetLikes.voterKey, voterKey)),
+    getLockedSectionScope(),
   ]);
 
-  const approvedSheets = allSheets.filter((sheet) => sheet.status === "approved");
-  const pendingSheets = allSheets
+  const scopedSheets = scope.allowedSubjectSlugs
+    ? allSheets.filter((sheet) => scope.allowedSubjectSlugs!.has(sheet.subjectSlug))
+    : allSheets;
+
+  const approvedSheets = scopedSheets.filter((sheet) => sheet.status === "approved");
+  const pendingSheets = scopedSheets
     .filter((sheet) => sheet.status === "pending")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

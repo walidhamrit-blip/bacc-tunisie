@@ -5,6 +5,7 @@ import { analyzeSheet, enhanceWithAi, type AnalysisInput } from "@/lib/analysis"
 import { getStudent, getSubject } from "@/lib/data";
 import { extractPdfText } from "@/lib/pdf";
 import { isSection, normalizeSection } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,16 +17,30 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const subjectSlug = String(formData.get("subjectSlug") ?? "").trim();
-    const section = normalizeSection(String(formData.get("section") ?? ""));
+    const rawSection = normalizeSection(String(formData.get("section") ?? ""));
     const instruction = String(formData.get("instruction") ?? "").trim().slice(0, 400);
     const pastedText = String(formData.get("text") ?? "").trim();
     const fileEntry = formData.get("file");
     const file = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
 
-    const subject = await getSubject(subjectSlug);
+    const [student, subject] = await Promise.all([
+      getStudent(),
+      getSubject(subjectSlug),
+    ]);
+
     if (!subject) {
-      return Response.json({ error: "Choisis une matière valide." }, { status: 400 });
+      return Response.json(
+        {
+          error: isLockedStudent(student)
+            ? `Cette matière ne fait pas partie de ta section verrouillée (${student.section}).`
+            : "Choisis une matière valide.",
+        },
+        { status: 400 },
+      );
     }
+
+    const effectiveSection = isLockedStudent(student) ? student.section : rawSection;
+
     if (file && file.size > MAX_FILE_SIZE) {
       return Response.json(
         { error: "Le PDF dépasse 4 Mo. Compresse-le ou colle l'énoncé dans la zone de texte." },
@@ -79,7 +94,7 @@ export async function POST(request: Request) {
       text: sourceText,
       subjectSlug: subject.slug,
       subjectName: subject.name,
-      section: isSection(section) ? section : "",
+      section: isSection(effectiveSection) ? effectiveSection : "",
       instruction,
       lessons: lessonRows,
       exercises: exerciseRows,
@@ -91,13 +106,12 @@ export async function POST(request: Request) {
     const analysis = await enhanceWithAi(input, base);
     analysis.warnings = [...warnings, ...analysis.warnings];
 
-    const student = await getStudent();
     const [saved] = await db
       .insert(corrections)
       .values({
         studentId: student.id,
         subjectSlug: subject.slug,
-        section,
+        section: effectiveSection,
         fileName,
         fileSize,
         pageCount,

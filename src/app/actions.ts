@@ -21,8 +21,17 @@ import {
   buildCommunitySheetSlug,
   validateCommunitySheetInput,
 } from "@/lib/community-validation";
-import { getStudent, type Student } from "@/lib/data";
+import { getStudent, getStudentSessionInfo, type Student } from "@/lib/data";
 import { normalizeSection } from "@/lib/sections";
+import {
+  DEVICE_TOKEN_COOKIE,
+  MAX_PERSONAL_DEVICES,
+  STUDENT_CODE_COOKIE,
+  generateSyncCode,
+  isLockedStudent,
+  normalizeSyncCode,
+  validateRegistrationInput,
+} from "@/lib/student-session";
 
 export type CommunitySubmissionState = {
   ok: boolean;
@@ -30,6 +39,15 @@ export type CommunitySubmissionState = {
   message: string;
   submittedAt?: number;
 };
+
+export type AccountActionState = {
+  ok: boolean;
+  errors: string[];
+  message: string;
+  syncCode?: string;
+};
+
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
 
 function computeNextStreakDays(lastActivityAt: Date | null, currentStreak: number, now: Date): number {
   if (!lastActivityAt) return 1;
@@ -71,6 +89,203 @@ function computeQuizXp(score: number, total: number, isBacBlanc: boolean): numbe
   const accuracyBonus = Math.round(ratio * (isBacBlanc ? 35 : 25));
   const perfectBonus = score === safeTotal ? 10 : 0;
   return base + accuracyBonus + perfectBonus;
+}
+
+/**
+ * Inscription d'un nouvel élève avec verrouillage irréversible sur UNE SEULE section
+ * (`sectionLocked = true`) et génération d'un Code Élève personnel limité à 2 appareils.
+ */
+export async function registerStudentAccount(
+  _prevState: AccountActionState,
+  formData: FormData,
+): Promise<AccountActionState> {
+  const validation = validateRegistrationInput({
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    lycee: String(formData.get("lycee") ?? ""),
+    section: String(formData.get("section") ?? ""),
+    confirmSingleSection: formData.get("confirmSingleSection") === "on",
+  });
+
+  if (!validation.ok) {
+    return {
+      ok: false,
+      errors: validation.errors,
+      message: "",
+    };
+  }
+
+  const { sanitized } = validation;
+
+  if (sanitized.email.length > 0) {
+    const existingEmail = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(and(eq(students.email, sanitized.email), eq(students.isDemo, false)))
+      .limit(1);
+
+    if (existingEmail.length > 0) {
+      return {
+        ok: false,
+        errors: [
+          "Un abonnement élève existe déjà avec cette adresse e-mail. Utilise l'onglet « J'ai déjà mon Code Élève » pour reprendre ta session.",
+        ],
+        message: "",
+      };
+    }
+  }
+
+  let syncCode = generateSyncCode();
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const collision = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(eq(students.syncCode, syncCode))
+      .limit(1);
+    if (collision.length === 0) break;
+    syncCode = generateSyncCode();
+  }
+
+  const deviceToken = `dev-${crypto.randomUUID()}`;
+
+  await db.insert(students).values({
+    name: sanitized.name,
+    email: sanitized.email,
+    lycee: sanitized.lycee,
+    section: sanitized.section,
+    sectionLocked: true,
+    syncCode,
+    deviceTokens: [deviceToken],
+    isDemo: false,
+    xpPoints: 25,
+    streakDays: 1,
+    lastActivityAt: new Date(),
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set(STUDENT_CODE_COOKIE, syncCode, {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: true,
+  });
+  cookieStore.set(DEVICE_TOKEN_COOKIE, deviceToken, {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: true,
+  });
+
+  revalidatePath("/", "layout");
+
+  return {
+    ok: true,
+    errors: [],
+    message: `Inscription validée (+25 XP) ! Ton abonnement est désormais verrouillé sur la section « ${sanitized.section} ». Note précieusement ton Code Élève : ${syncCode}.`,
+    syncCode,
+  };
+}
+
+/**
+ * Connexion / synchronisation d'un appareil personnel via le Code Élève (`BAC-XXXX-XX`).
+ * Limite strictement le compte à `MAX_PERSONAL_DEVICES` (2 appareils : ex. téléphone + PC)
+ * en déconnectant automatiquement l'appareil le plus ancien en cas de dépassement.
+ */
+export async function loginWithSyncCode(
+  _prevState: AccountActionState,
+  formData: FormData,
+): Promise<AccountActionState> {
+  const normalizedCode = normalizeSyncCode(String(formData.get("syncCode") ?? ""));
+  if (!normalizedCode || normalizedCode.length < 8) {
+    return {
+      ok: false,
+      errors: ["Saisis ton Code Élève complet au format BAC-XXXX-XX."],
+      message: "",
+    };
+  }
+
+  const rows = await db
+    .select()
+    .from(students)
+    .where(and(eq(students.syncCode, normalizedCode), eq(students.isDemo, false)))
+    .limit(1);
+
+  if (rows.length === 0) {
+    return {
+      ok: false,
+      errors: [
+        "Aucun compte élève trouvé pour ce code. Vérifie l'orthographe (ex. BAC-7K9P-4M) ou crée ton abonnement personnel.",
+      ],
+      message: "",
+    };
+  }
+
+  const account = rows[0];
+  const cookieStore = await cookies();
+  const existingCookieToken = cookieStore.get(DEVICE_TOKEN_COOKIE)?.value?.trim() ?? "";
+  const nextDeviceToken =
+    existingCookieToken.length > 0 ? existingCookieToken : `dev-${crypto.randomUUID()}`;
+
+  const updatedTokens = [
+    ...(account.deviceTokens ?? []).filter((token) => token !== nextDeviceToken),
+    nextDeviceToken,
+  ].slice(-MAX_PERSONAL_DEVICES);
+
+  await db
+    .update(students)
+    .set({
+      deviceTokens: updatedTokens,
+      lastActivityAt: new Date(),
+    })
+    .where(eq(students.id, account.id));
+
+  cookieStore.set(STUDENT_CODE_COOKIE, normalizedCode, {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: true,
+  });
+  cookieStore.set(DEVICE_TOKEN_COOKIE, nextDeviceToken, {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: true,
+  });
+
+  revalidatePath("/", "layout");
+
+  return {
+    ok: true,
+    errors: [],
+    message: `Bon retour ${account.name} ! Session synchronisée sur ta section verrouillée « ${account.section} ».`,
+    syncCode: normalizedCode,
+  };
+}
+
+/**
+ * Révoque immédiatement tous les autres appareils connectés à ce compte élève,
+ * en ne conservant que l'appareil courant.
+ */
+export async function revokeOtherDevices() {
+  const { student, sessionStatus, currentDeviceToken } = await getStudentSessionInfo();
+  if (sessionStatus !== "authenticated" || student.isDemo || !currentDeviceToken) return;
+
+  await db
+    .update(students)
+    .set({ deviceTokens: [currentDeviceToken] })
+    .where(eq(students.id, student.id));
+
+  revalidatePath("/mon-compte");
+}
+
+/**
+ * Déconnecte l'appareil courant sans supprimer la progression stockée en base.
+ */
+export async function logoutStudentAccount() {
+  const cookieStore = await cookies();
+  cookieStore.delete(STUDENT_CODE_COOKIE);
+  cookieStore.delete(DEVICE_TOKEN_COOKIE);
+  revalidatePath("/", "layout");
 }
 
 export async function toggleProgress(formData: FormData) {
@@ -261,13 +476,21 @@ export async function submitCommunitySheet(
   formData: FormData,
 ): Promise<CommunitySubmissionState> {
   const student = await getStudent();
-  const subjectRows = await db.select({ slug: subjects.slug }).from(subjects);
-  const validSubjectSlugs = new Set(subjectRows.map((row) => row.slug));
+  const subjectRows = await db.select({ slug: subjects.slug, sections: subjects.sections }).from(subjects);
+
+  const allowedRows = isLockedStudent(student)
+    ? subjectRows.filter((row) => row.sections.includes(student.section))
+    : subjectRows;
+  const validSubjectSlugs = new Set(allowedRows.map((row) => row.slug));
+
+  const effectiveSection = isLockedStudent(student)
+    ? student.section
+    : String(formData.get("section") ?? "");
 
   const validation = validateCommunitySheetInput(
     {
       authorName: String(formData.get("authorName") ?? ""),
-      section: String(formData.get("section") ?? ""),
+      section: effectiveSection,
       subjectSlug: String(formData.get("subjectSlug") ?? ""),
       period: String(formData.get("period") ?? "T1"),
       title: String(formData.get("title") ?? ""),
@@ -370,7 +593,7 @@ export async function toggleCommunitySheetLike(sheetId: number): Promise<{
     try {
       cookieStore.set("bac_voter", generated, {
         path: "/",
-        maxAge: 60 * 60 * 24 * 365,
+        maxAge: COOKIE_MAX_AGE,
         sameSite: "lax",
       });
       voterKey = generated;
@@ -435,14 +658,30 @@ export async function toggleCommunitySheetLike(sheetId: number): Promise<{
   };
 }
 
+/**
+ * Met à jour le profil de l'élève :
+ * - Si l'abonnement personnel est actif (`sectionLocked = true`), la section est
+ *   STRICTEMENT immuable côté serveur (anti-partage multi-sections).
+ * - En mode visiteur de démonstration (`isDemo = true`), permet de tester une section.
+ */
 export async function updateStudentProfile(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
-  const section = normalizeSection(String(formData.get("section") ?? ""));
+  const lycee = String(formData.get("lycee") ?? "").trim().slice(0, 100);
   const student = await getStudent();
+
+  const nextSection = isLockedStudent(student)
+    ? student.section
+    : normalizeSection(String(formData.get("section") ?? ""));
+
   await db
     .update(students)
-    .set({ name: name.length > 0 ? name : student.name, section })
+    .set({
+      name: name.length > 0 ? name : student.name,
+      lycee,
+      section: nextSection,
+    })
     .where(eq(students.id, student.id));
+
   revalidatePath("/", "layout");
 }
 

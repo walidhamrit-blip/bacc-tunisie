@@ -11,8 +11,7 @@ export function SiteFooter() {
             corrigés, quiz et évaluation de niveau matière par matière.
           </p>
           <p className="mt-4 text-xs text-[var(--ink-soft)]">
-            Programme officiel tunisien · Sections Mathématiques, Sciences expérimentales, Sciences techniques,
-            Économie &amp; Gestion, Lettres, Informatique et Sport.
+            Programme officiel tunisien · Abonnement individuel dédié à une seule section par inscription.
           </p>
         </div>
         <div>
@@ -27,8 +26,9 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <p className="eyebrow mb-3">S&apos;entraîner</p>
+          <p className="eyebrow mb-3">S&apos;entraîner &amp; Compte</p>
           <ul className="space-y-2 text-sm text-[var(--ink-soft)]">
+            <li><Link className="hover:text-[var(--brand)]" href="/mon-compte">Mon compte &amp; Code Élève (1 section)</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/organisation">Pomodoro &amp; Compte à rebours J-J</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/bac-blanc">Simulateur Bac Blanc (chrono)</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/quiz">Quiz interactifs</Link></li>

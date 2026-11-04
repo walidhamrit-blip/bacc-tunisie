@@ -4,6 +4,7 @@ import { lessonDisplayPeriod, lessonPeriodsForFilter } from "@/db/content/progra
 import { OfflineSyncButton } from "@/components/offline-sync-button";
 import { PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
 import { PERIOD_BY_ID, PERIODS, SECTIONS, type PeriodId } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,14 @@ export default async function LessonsPage({
   const params = await searchParams;
   const [subjects, lessons, dashboard] = await Promise.all([listSubjects(), listLessons(), getDashboard()]);
   const doneLessons = await getStudentLessonSlugs(dashboard.student.id);
+  const locked = isLockedStudent(dashboard.student);
+
   const activeSubject = params.matiere;
-  const activeSection = params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
-    ? params.section
-    : null;
+  const activeSection = locked
+    ? dashboard.student.section
+    : params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
+      ? params.section
+      : null;
   const activePeriod = params.trimestre && PERIOD_BY_ID[params.trimestre as keyof typeof PERIOD_BY_ID]
     ? (params.trimestre as PeriodId)
     : null;
@@ -54,10 +59,14 @@ export default async function LessonsPage({
 
   const filterHref = (next: { section?: string | null; trimestre?: string | null; matiere?: string | null }) => {
     const search = new URLSearchParams();
-    const section = next.section === undefined ? activeSection : next.section;
+    const section = locked
+      ? dashboard.student.section
+      : next.section === undefined
+        ? activeSection
+        : next.section;
     const trimestre = next.trimestre === undefined ? activePeriod : next.trimestre;
     const matiere = next.matiere === undefined ? activeSubject : next.matiere;
-    if (section) search.set("section", section);
+    if (section && !locked) search.set("section", section);
     if (trimestre) search.set("trimestre", trimestre);
     if (matiere) search.set("matiere", matiere);
     const query = search.toString();
@@ -103,25 +112,35 @@ export default async function LessonsPage({
           ))}
       </div>
 
-      <div className="mb-5 grid gap-2 rounded-2xl border border-[var(--line)] bg-[#fcfaf5] p-3 sm:grid-cols-[auto_1fr] sm:items-center">
+      <div className="mb-5 grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-3 sm:grid-cols-[auto_1fr] sm:items-center">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-          <Link
-            href={filterHref({ section: null })}
-            className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
-          >
-            Toutes
-          </Link>
-          {SECTIONS.map((item) => (
+        {locked ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip chip-active">🔒 {dashboard.student.section}</span>
+            <span className="text-xs text-[var(--ink-soft)]">
+              Abonnement individuel verrouillé sur cette unique section
+            </span>
+          </div>
+        ) : (
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             <Link
-              key={item}
-              href={filterHref({ section: item })}
-              className={`chip whitespace-nowrap ${activeSection === item ? "chip-active" : ""}`}
+              href={filterHref({ section: null })}
+              className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
             >
-              {item}
+              Toutes
             </Link>
-          ))}
-        </div>
+            {SECTIONS.map((item) => (
+              <Link
+                key={item}
+                href={filterHref({ section: item })}
+                className={`chip whitespace-nowrap ${activeSection === item ? "chip-active" : ""}`}
+              >
+                {item}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Trimestre</p>
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
           <Link
@@ -187,7 +206,7 @@ export default async function LessonsPage({
                     <Link
                       key={lesson.slug}
                       href={`/cours/${lesson.slug}`}
-                      className="rounded-xl border border-[var(--line)] p-4 transition hover:border-[#cdbfa8] hover:bg-[#fcfaf5]"
+                      className="rounded-xl border border-[var(--line)] p-4 transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)]"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">

@@ -164,16 +164,28 @@ export const quizzes = pgTable(
   (table) => [uniqueIndex("quizzes_slug_idx").on(table.slug)],
 );
 
-export const students = pgTable("students", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  section: text("section").notNull(),
-  isDemo: boolean("is_demo").notNull().default(true),
-  xpPoints: integer("xp_points").notNull().default(0),
-  streakDays: integer("streak_days").notNull().default(0),
-  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const students = pgTable(
+  "students",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().default(""),
+    lycee: text("lycee").notNull().default(""),
+    section: text("section").notNull(),
+    /** Verrouille définitivement l'abonnement de l'élève sur son unique section choisie à l'inscription. */
+    sectionLocked: boolean("section_locked").notNull().default(false),
+    /** Code personnel unique (ex. BAC-7K9P-4M) permettant la synchronisation sur téléphone + ordinateur. */
+    syncCode: text("sync_code"),
+    /** Jetons d'appareils actifs autorisés (plafonné à 2 appareils personnels contre le partage de compte). */
+    deviceTokens: jsonb("device_tokens").$type<string[]>().notNull().default([]),
+    isDemo: boolean("is_demo").notNull().default(true),
+    xpPoints: integer("xp_points").notNull().default(0),
+    streakDays: integer("streak_days").notNull().default(0),
+    lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("students_sync_code_idx").on(table.syncCode)],
+);
 
 export const lessonProgress = pgTable(
   "lesson_progress",
