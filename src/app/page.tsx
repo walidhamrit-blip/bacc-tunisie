@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDashboard, listLessons, listSubjects } from "@/lib/data";
+import { OrganisationTools } from "@/components/organisation-tools";
 import { LevelPill, ProgressBar, SubjectGlyph } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -118,7 +119,7 @@ export default async function HomePage() {
       </section>
 
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <QuickCard
             href="/cours"
             title="Fiches de cours"
@@ -154,7 +155,29 @@ export default async function HomePage() {
             color="var(--violet)"
             icon="🗺️"
           />
+          <QuickCard
+            href="/organisation"
+            title="Pomodoro & J-J"
+            text="Minuteur 25 min / 5 min avec alerte sonore et compte à rebours avant le Bac."
+            color="var(--brand)"
+            icon="⏱️"
+          />
         </div>
+
+        <section className="mt-14">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow">Organisation &amp; rythme quotidien</p>
+              <h2 className="display mt-1 text-2xl font-semibold text-[var(--ink)] sm:text-3xl">
+                Ton Pomodoro &amp; le compte à rebours J-J
+              </h2>
+            </div>
+            <Link href="/organisation" className="btn btn-ghost btn-sm">
+              Plein écran &amp; repères
+            </Link>
+          </div>
+          <OrganisationTools studentSection={dashboard.student.section} compact />
+        </section>
 
         <section className="mt-14">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
