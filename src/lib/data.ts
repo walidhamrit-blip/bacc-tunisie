@@ -10,10 +10,12 @@ import {
   lessons,
   quizAttempts,
   quizzes,
+  scoreHistory,
   students,
   subjects,
 } from "@/db/schema";
 import { ensureSeeded } from "@/db/seed";
+import { calculateMentionProbability } from "@/lib/mention-probability";
 
 export type Student = typeof students.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
@@ -21,6 +23,7 @@ export type Lesson = typeof lessons.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
+export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
 
 export type LevelLabel = {
   label: string;
@@ -155,7 +158,7 @@ export async function getDashboard() {
     db.select({ slug: quizzes.slug, subjectSlug: quizzes.subjectSlug, title: quizzes.title }).from(quizzes),
   ]);
 
-  const [doneLessons, doneExercises, doneExams, attempts] = await Promise.all([
+  const [doneLessons, doneExercises, doneExams, attempts, historyRows] = await Promise.all([
     db.select().from(lessonProgress).where(eq(lessonProgress.studentId, student.id)),
     db.select().from(exerciseProgress).where(eq(exerciseProgress.studentId, student.id)),
     db.select().from(examProgress).where(eq(examProgress.studentId, student.id)),
@@ -164,6 +167,11 @@ export async function getDashboard() {
       .from(quizAttempts)
       .where(eq(quizAttempts.studentId, student.id))
       .orderBy(desc(quizAttempts.createdAt)),
+    db
+      .select()
+      .from(scoreHistory)
+      .where(eq(scoreHistory.studentId, student.id))
+      .orderBy(desc(scoreHistory.createdAt)),
   ]);
 
   const relevantSubjects = subjectRows.filter(
@@ -178,15 +186,29 @@ export async function getDashboard() {
     const lDone = doneLessons.filter((row) => row.subjectSlug === subject.slug).length;
     const eDone = doneExercises.filter((row) => row.subjectSlug === subject.slug).length;
     const xDone = doneExams.filter((row) => row.subjectSlug === subject.slug).length;
+    const subjectHistory = historyRows.filter((row) => row.subjectSlug === subject.slug);
     const subjectAttempts = attempts.filter((row) => row.subjectSlug === subject.slug);
+
     const quizAverage =
-      subjectAttempts.length > 0
+      subjectHistory.length > 0
         ? Math.round(
-            (subjectAttempts.reduce((sum, row) => sum + row.score / Math.max(row.total, 1), 0) /
-              subjectAttempts.length) *
+            (subjectHistory.reduce(
+              (sum, row) =>
+                sum +
+                (row.noteOn20Tenths > 0 ? row.noteOn20Tenths / 200 : row.score / Math.max(row.total, 1)),
+              0,
+            ) /
+              subjectHistory.length) *
               100,
           )
-        : null;
+        : subjectAttempts.length > 0
+          ? Math.round(
+              (subjectAttempts.reduce((sum, row) => sum + row.score / Math.max(row.total, 1), 0) /
+                subjectAttempts.length) *
+                100,
+            )
+          : null;
+
     const totalItems = lTotal + eTotal + xTotal;
     const doneItems = Math.min(lDone, lTotal) + Math.min(eDone, eTotal) + Math.min(xDone, xTotal);
     const coverage = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
@@ -203,12 +225,43 @@ export async function getDashboard() {
       exercisesTotal: eTotal,
       examsDone: Math.min(xDone, xTotal),
       examsTotal: xTotal,
-      quizCount: subjectAttempts.length,
+      quizCount: Math.max(subjectAttempts.length, subjectHistory.length),
       quizAverage,
       coverage,
       mastery,
       level: levelFromMastery(mastery),
     };
+  });
+
+  // Calcul des snapshots de couverture sur l'ensemble des 13 matières pour le moteur de Mention
+  const allSubjectSnapshots = subjectRows.map((subject) => {
+    const lTotal = lessonRows.filter((row) => row.subjectSlug === subject.slug).length;
+    const eTotal = exerciseRows.filter((row) => row.subjectSlug === subject.slug).length;
+    const xTotal = examRows.filter((row) => row.subjectSlug === subject.slug).length;
+    const lDone = Math.min(lTotal, doneLessons.filter((row) => row.subjectSlug === subject.slug).length);
+    const eDone = Math.min(eTotal, doneExercises.filter((row) => row.subjectSlug === subject.slug).length);
+    const xDone = Math.min(xTotal, doneExams.filter((row) => row.subjectSlug === subject.slug).length);
+    const totalItems = lTotal + eTotal + xTotal;
+    const coveragePct = totalItems > 0 ? Math.round(((lDone + eDone + xDone) / totalItems) * 100) : 0;
+    return {
+      subjectSlug: subject.slug,
+      subjectName: subject.name,
+      coveragePct,
+      lessonsDone: lDone,
+      exercisesDone: eDone,
+      examsDone: xDone,
+    };
+  });
+
+  const mentionPrediction = calculateMentionProbability({
+    section: student.section,
+    history: historyRows,
+    subjectSnapshots: allSubjectSnapshots,
+    xpPoints: student.xpPoints ?? 0,
+    streakDays: student.streakDays ?? 0,
+    totalLessonsDone: doneLessons.length,
+    totalExercisesDone: doneExercises.length,
+    totalExamsDone: doneExams.length,
   });
 
   const tracked = subjectLevels.filter(
@@ -243,11 +296,13 @@ export async function getDashboard() {
     strongest,
     notStarted,
     nextQuiz,
+    mentionPrediction,
+    scoreHistory: historyRows.slice(0, 12),
     stats: {
       lessonsDone: doneLessons.length,
       exercisesDone: doneExercises.length,
       examsDone: doneExams.length,
-      quizCount: attempts.length,
+      quizCount: Math.max(attempts.length, historyRows.length),
       quizSuccess:
         totalAttemptQuestions > 0 ? Math.round((totalAttemptScore / totalAttemptQuestions) * 100) : null,
       corrections: (

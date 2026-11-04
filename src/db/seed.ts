@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   examProgress,
@@ -9,6 +9,7 @@ import {
   lessons,
   quizAttempts,
   quizzes,
+  scoreHistory,
   students,
   subjects,
 } from "@/db/schema";
@@ -38,10 +39,19 @@ async function countRows(table: typeof subjects | typeof lessons | typeof quizze
   return row?.count ?? 0;
 }
 
+function computeQuizXp(score: number, total: number, isBacBlanc: boolean): number {
+  const safeTotal = Math.max(1, total);
+  const ratio = Math.max(0, Math.min(1, score / safeTotal));
+  const base = isBacBlanc ? 35 : 20;
+  const accuracyBonus = Math.round(ratio * (isBacBlanc ? 35 : 25));
+  const perfectBonus = score === safeTotal ? 10 : 0;
+  return base + accuracyBonus + perfectBonus;
+}
+
 /**
- * Crée les tables si elles n'existent pas encore.
+ * Crée les tables et colonnes si elles n'existent pas encore.
  * Utile quand le projet Vercel est déployé sans avoir lancé `npm run db:push`
- * (base Neon neuve) : l'application s'auto-initialise au premier chargement.
+ * (base Neon neuve ou déjà en production) : l'application s'auto-migre au chargement.
  * Chaque instruction est idempotente (IF NOT EXISTS).
  */
 export async function ensureSchema(): Promise<void> {
@@ -49,9 +59,11 @@ export async function ensureSchema(): Promise<void> {
     try {
       await db.execute(sql.raw(statement));
     } catch (error) {
-      // 42P07 / 42710 : objet déjà présent (course entre deux instances) → on ignore.
+      // 42P07 / 42710 / 42701 : table, index ou colonne déjà présent (course entre deux instances).
       const code = (error as { code?: string }).code;
-      if (code !== "42P07" && code !== "42710" && code !== "42P16") throw error;
+      if (code !== "42P07" && code !== "42710" && code !== "42P16" && code !== "42701") {
+        throw error;
+      }
     }
   }
 }
@@ -65,7 +77,10 @@ async function doSeed() {
     countRows(quizzes),
   ]);
 
-  const contentReady = subjectCount >= subjectSeeds.length && lessonCount >= lessonsSeed.length && quizCount >= quizzesSeed.length;
+  const contentReady =
+    subjectCount >= subjectSeeds.length &&
+    lessonCount >= lessonsSeed.length &&
+    quizCount >= quizzesSeed.length;
 
   if (!contentReady) {
     if (subjectCount < subjectSeeds.length) {
@@ -122,88 +137,161 @@ async function doSeed() {
     }
   }
 
-  {
-    const existing = await db.select({ id: students.id }).from(students).limit(1);
-    if (existing.length === 0) {
-      const [student] = await db
-        .insert(students)
-        .values({ name: DEMO_NAME, section: DEMO_SECTION, isDemo: true })
-        .returning({ id: students.id });
+  const quizTitleBySlug = new Map(quizzesSeed.map((quiz) => [quiz.slug, quiz.title]));
 
-      await db.insert(lessonProgress).values(
-        [
-          ["suites-numeriques", "mathematiques"],
-          ["dipole-rc", "physique"],
-          ["genetique-transmission", "svt"],
-          ["la-liberte", "philosophie"],
-          ["english-tenses-writing", "anglais"],
-        ].map(([lessonSlug, subjectSlug]) => ({
-          studentId: student.id,
-          lessonSlug,
-          subjectSlug,
-        })),
-      );
+  const existing = await db.select().from(students).orderBy(asc(students.id)).limit(1);
+  if (existing.length === 0) {
+    const demoAttempts = [
+      { quizSlug: "quiz-math-suites", subjectSlug: "mathematiques", score: 3, total: 4 },
+      { quizSlug: "quiz-physique-rc", subjectSlug: "physique", score: 3, total: 4 },
+      { quizSlug: "quiz-svt-genetique", subjectSlug: "svt", score: 2, total: 4 },
+      { quizSlug: "quiz-philo-liberte", subjectSlug: "philosophie", score: 2, total: 4 },
+      { quizSlug: "quiz-anglais-tenses", subjectSlug: "anglais", score: 4, total: 4 },
+      { quizSlug: "quiz-info-python", subjectSlug: "informatique", score: 3, total: 4 },
+    ];
 
-      await db.insert(exerciseProgress).values(
-        [
-          ["suite-auxiliaire", "mathematiques"],
-          ["rc-constante-de-temps", "physique"],
-          ["python-maximum-moyenne", "informatique"],
-        ].map(([exerciseSlug, subjectSlug]) => ({
-          studentId: student.id,
-          exerciseSlug,
-          subjectSlug,
-        })),
-      );
+    const quizXpTotal = demoAttempts.reduce(
+      (sum, item) => sum + computeQuizXp(item.score, item.total, false),
+      0,
+    );
+    // 5 fiches (5×15=75 XP) + 3 exercices (3×25=75 XP) + 1 examen (40 XP) + quiz XP
+    const initialXp = 75 + 75 + 40 + quizXpTotal;
 
-      await db.insert(examProgress).values([
-        { studentId: student.id, examSlug: "bac-math-sciences-session", subjectSlug: "mathematiques" },
-      ]);
+    const [student] = await db
+      .insert(students)
+      .values({
+        name: DEMO_NAME,
+        section: DEMO_SECTION,
+        isDemo: true,
+        xpPoints: initialXp,
+        streakDays: 3,
+        lastActivityAt: new Date(),
+      })
+      .returning({ id: students.id });
 
-      await db.insert(quizAttempts).values([
-        {
-          studentId: student.id,
-          quizSlug: "quiz-math-suites",
-          subjectSlug: "mathematiques",
-          score: 3,
-          total: 4,
-        },
-        {
-          studentId: student.id,
-          quizSlug: "quiz-physique-rc",
-          subjectSlug: "physique",
-          score: 3,
-          total: 4,
-        },
-        {
-          studentId: student.id,
-          quizSlug: "quiz-svt-genetique",
-          subjectSlug: "svt",
-          score: 2,
-          total: 4,
-        },
-        {
-          studentId: student.id,
-          quizSlug: "quiz-philo-liberte",
-          subjectSlug: "philosophie",
-          score: 2,
-          total: 4,
-        },
-        {
-          studentId: student.id,
-          quizSlug: "quiz-anglais-tenses",
-          subjectSlug: "anglais",
-          score: 4,
-          total: 4,
-        },
-        {
-          studentId: student.id,
-          quizSlug: "quiz-info-python",
-          subjectSlug: "informatique",
-          score: 3,
-          total: 4,
-        },
-      ]);
+    await db.insert(lessonProgress).values(
+      [
+        ["suites-numeriques", "mathematiques"],
+        ["dipole-rc", "physique"],
+        ["genetique-transmission", "svt"],
+        ["la-liberte", "philosophie"],
+        ["english-tenses-writing", "anglais"],
+      ].map(([lessonSlug, subjectSlug]) => ({
+        studentId: student.id,
+        lessonSlug,
+        subjectSlug,
+      })),
+    );
+
+    await db.insert(exerciseProgress).values(
+      [
+        ["suite-auxiliaire", "mathematiques"],
+        ["rc-constante-de-temps", "physique"],
+        ["python-maximum-moyenne", "informatique"],
+      ].map(([exerciseSlug, subjectSlug]) => ({
+        studentId: student.id,
+        exerciseSlug,
+        subjectSlug,
+      })),
+    );
+
+    await db.insert(examProgress).values([
+      { studentId: student.id, examSlug: "bac-math-sciences-session", subjectSlug: "mathematiques" },
+    ]);
+
+    await db.insert(quizAttempts).values(
+      demoAttempts.map((item) => ({
+        studentId: student.id,
+        ...item,
+      })),
+    );
+
+    await db.insert(scoreHistory).values(
+      demoAttempts.map((item) => ({
+        studentId: student.id,
+        activityType: "quiz" as const,
+        activitySlug: item.quizSlug,
+        activityTitle: quizTitleBySlug.get(item.quizSlug) ?? item.quizSlug,
+        subjectSlug: item.subjectSlug,
+        score: item.score,
+        total: item.total,
+        noteOn20Tenths: Math.round((item.score / Math.max(1, item.total)) * 200),
+        xpEarned: computeQuizXp(item.score, item.total, false),
+        durationSec: 240,
+      })),
+    );
+  } else {
+    // Migration douce pour une base déjà peuplée : si `score_history` est vide alors que
+    // `quiz_attempts` contient déjà des essais, on reconstruit automatiquement l'historique et l'XP.
+    const currentStudent = existing[0];
+    const [{ count: historyCount }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(scoreHistory)
+      .where(eq(scoreHistory.studentId, currentStudent.id));
+
+    if (historyCount === 0) {
+      const existingAttempts = await db
+        .select()
+        .from(quizAttempts)
+        .where(eq(quizAttempts.studentId, currentStudent.id))
+        .orderBy(asc(quizAttempts.createdAt));
+
+      if (existingAttempts.length > 0) {
+        const backfilledRows = existingAttempts.map((attempt) => {
+          const isBacBlanc = attempt.quizSlug.startsWith("bac-blanc-");
+          const xp = computeQuizXp(attempt.score, attempt.total, isBacBlanc);
+          return {
+            studentId: currentStudent.id,
+            activityType: (isBacBlanc ? "bac-blanc" : "quiz") as "bac-blanc" | "quiz",
+            activitySlug: attempt.quizSlug,
+            activityTitle: isBacBlanc
+              ? `Bac Blanc · ${attempt.subjectSlug}`
+              : (quizTitleBySlug.get(attempt.quizSlug) ?? attempt.quizSlug),
+            subjectSlug: attempt.subjectSlug,
+            score: attempt.score,
+            total: attempt.total,
+            noteOn20Tenths: Math.round((attempt.score / Math.max(1, attempt.total)) * 200),
+            xpEarned: xp,
+            durationSec: isBacBlanc ? 600 : 240,
+            createdAt: attempt.createdAt,
+          };
+        });
+
+        await chunkedInsert(backfilledRows, 10, (batch) => db.insert(scoreHistory).values(batch));
+
+        if (currentStudent.xpPoints === 0) {
+          const [[lCount], [eCount], [xCount]] = await Promise.all([
+            db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(lessonProgress)
+              .where(eq(lessonProgress.studentId, currentStudent.id)),
+            db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(exerciseProgress)
+              .where(eq(exerciseProgress.studentId, currentStudent.id)),
+            db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(examProgress)
+              .where(eq(examProgress.studentId, currentStudent.id)),
+          ]);
+
+          const attemptXp = backfilledRows.reduce((sum, row) => sum + row.xpEarned, 0);
+          const totalXp =
+            (lCount?.count ?? 0) * 15 +
+            (eCount?.count ?? 0) * 25 +
+            (xCount?.count ?? 0) * 40 +
+            attemptXp;
+
+          await db
+            .update(students)
+            .set({
+              xpPoints: totalXp,
+              streakDays: Math.max(1, currentStudent.streakDays || 2),
+              lastActivityAt: existingAttempts[existingAttempts.length - 1]?.createdAt ?? new Date(),
+            })
+            .where(eq(students.id, currentStudent.id));
+        }
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ export default async function HomePage() {
   const visibleSubjects = (sectionSubjects.length > 0 ? sectionSubjects : subjects).slice(0, 8);
   const featuredLessons = lessons.slice(0, 3);
   const topLevels = dashboard.tracked.slice(0, 4);
+  const { mentionPrediction } = dashboard;
 
   return (
     <div>
@@ -60,7 +61,7 @@ export default async function HomePage() {
                 <Check /> Corrigés détaillés
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Check /> Suivi de niveau
+                <Check /> Probabilité de mention
               </span>
             </div>
           </div>
@@ -69,26 +70,39 @@ export default async function HomePage() {
             <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[var(--gold)]/15" />
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="eyebrow">Tableau de niveau</p>
+                <p className="eyebrow">Tableau de niveau · Niv. {mentionPrediction.gamification.rank.level}</p>
                 <p className="display mt-1 text-xl font-semibold text-[var(--ink)]">{dashboard.student.name}</p>
-                <p className="text-xs text-[var(--ink-soft)]">{dashboard.student.section}</p>
+                <p className="text-xs text-[var(--ink-soft)]">
+                  {dashboard.student.section} ·{" "}
+                  <strong className="text-[var(--ink)]">{mentionPrediction.gamification.rank.currentXp} XP</strong>
+                </p>
               </div>
               <LevelPill level={dashboard.overallLevel} />
             </div>
 
-            <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fcfaf5] p-4">
+            <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[#fcfaf5] p-4">
               <div className="flex items-end justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                  Maîtrise globale
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                    Moyenne projetée au Bac
+                  </p>
+                  {mentionPrediction.mostLikelyMention ? (
+                    <span className={`mt-1 inline-flex badge ${mentionPrediction.mostLikelyMention.badgeClass}`}>
+                      Mention {mentionPrediction.mostLikelyMention.label} (
+                      {mentionPrediction.mostLikelyMention.bracketProbabilityPct}%)
+                    </span>
+                  ) : null}
+                </div>
+                <p className="display text-2xl font-semibold text-[var(--ink)]">
+                  {mentionPrediction.projectedAverage20.toFixed(2).replace(".", ",")}/20
                 </p>
-                <p className="display text-2xl font-semibold text-[var(--ink)]">{dashboard.overallMastery}%</p>
               </div>
-              <div className="mt-2">
+              <div className="mt-2.5">
                 <ProgressBar value={dashboard.overallMastery} />
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <MiniStat value={dashboard.stats.lessonsDone} label="fiches" />
-                <MiniStat value={dashboard.stats.quizCount} label="quiz" />
+                <MiniStat value={dashboard.stats.quizCount} label="scores" />
                 <MiniStat value={dashboard.stats.exercisesDone} label="exercices" />
               </div>
             </div>
@@ -111,7 +125,7 @@ export default async function HomePage() {
             </div>
 
             <Link href="/evaluation" className="mt-5 flex items-center justify-between text-sm font-semibold text-[var(--brand)]">
-              Voir le tableau complet
+              Voir ma probabilité de mention &amp; mes badges
               <span aria-hidden>→</span>
             </Link>
           </div>
