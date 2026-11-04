@@ -66,6 +66,8 @@ export type CorrectionAnalysis = {
 
 export type ScoreActivityType = "quiz" | "bac-blanc" | "devoir";
 
+export type CommunitySheetStatus = "pending" | "approved" | "rejected";
+
 export const subjects = pgTable(
   "subjects",
   {
@@ -241,6 +243,54 @@ export const scoreHistory = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("score_history_student_created_idx").on(table.studentId, table.createdAt)],
+);
+
+/**
+ * Fiches courtes de révision soumises par les élèves de la communauté
+ * avec workflow de validation simple (`pending` -> `approved` / `rejected`).
+ */
+export const communitySheets = pgTable(
+  "community_sheets",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull(),
+    studentId: integer("student_id").notNull(),
+    authorName: text("author_name").notNull(),
+    section: text("section").notNull(),
+    subjectSlug: text("subject_slug").notNull(),
+    period: text("period").notNull().default("T1"),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    content: text("content").notNull(),
+    keyFormula: text("key_formula").notNull().default(""),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    status: text("status").$type<CommunitySheetStatus>().notNull().default("pending"),
+    moderationNote: text("moderation_note").notNull().default(""),
+    likesCount: integer("likes_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("community_sheets_slug_idx").on(table.slug),
+    index("community_sheets_status_created_idx").on(table.status, table.createdAt),
+  ],
+);
+
+/**
+ * Mentions « J'aime » sur les fiches communautaires (unicité par fiche et par votant).
+ */
+export const communitySheetLikes = pgTable(
+  "community_sheet_likes",
+  {
+    id: serial("id").primaryKey(),
+    sheetId: integer("sheet_id").notNull(),
+    studentId: integer("student_id").notNull(),
+    voterKey: text("voter_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("community_sheet_likes_unique_idx").on(table.sheetId, table.voterKey),
+    index("community_sheet_likes_sheet_idx").on(table.sheetId),
+  ],
 );
 
 export const corrections = pgTable(

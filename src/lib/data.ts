@@ -1,6 +1,8 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  communitySheetLikes,
+  communitySheets,
   corrections,
   examProgress,
   exams,
@@ -24,6 +26,7 @@ export type Exercise = typeof exercises.$inferSelect;
 export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
 export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
+export type CommunitySheet = typeof communitySheets.$inferSelect;
 
 export type LevelLabel = {
   label: string;
@@ -371,4 +374,32 @@ export async function getBestQuizScores(studentId: number) {
     .where(eq(quizAttempts.studentId, studentId))
     .groupBy(quizAttempts.quizSlug);
   return new Map(rows.map((row) => [row.quizSlug, row]));
+}
+
+export async function getCommunitySpaceData(voterKey: string) {
+  await ensureSeeded();
+
+  const [allSheets, likedRows] = await Promise.all([
+    db
+      .select()
+      .from(communitySheets)
+      .orderBy(desc(communitySheets.likesCount), desc(communitySheets.createdAt)),
+    db
+      .select({ sheetId: communitySheetLikes.sheetId })
+      .from(communitySheetLikes)
+      .where(eq(communitySheetLikes.voterKey, voterKey)),
+  ]);
+
+  const approvedSheets = allSheets.filter((sheet) => sheet.status === "approved");
+  const pendingSheets = allSheets
+    .filter((sheet) => sheet.status === "pending")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const likedSheetIds = likedRows.map((row) => row.sheetId);
+
+  return {
+    approvedSheets,
+    pendingSheets,
+    likedSheetIds,
+  };
 }

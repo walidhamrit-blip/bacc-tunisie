@@ -20,6 +20,7 @@ export function SiteFooter() {
           <ul className="space-y-2 text-sm text-[var(--ink-soft)]">
             <li><Link className="hover:text-[var(--brand)]" href="/matieres">Toutes les matières</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/cours">Fiches de cours</Link></li>
+            <li><Link className="hover:text-[var(--brand)]" href="/communaute">Espace communautaire de fiches</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/flashcards">Cartes mémos (Flashcards)</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/exercices">Exercices corrigés</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/examens">Examens &amp; séries</Link></li>

@@ -23,6 +23,8 @@ export const INIT_SQL_STATEMENTS: string[] = [
   "ALTER TABLE \"students\" ADD COLUMN IF NOT EXISTS \"streak_days\" integer DEFAULT 0 NOT NULL;",
   "ALTER TABLE \"students\" ADD COLUMN IF NOT EXISTS \"last_activity_at\" timestamp with time zone;",
   "CREATE TABLE IF NOT EXISTS \"score_history\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"student_id\" integer NOT NULL,\n\t\"activity_type\" text DEFAULT 'quiz' NOT NULL,\n\t\"activity_slug\" text NOT NULL,\n\t\"activity_title\" text DEFAULT '' NOT NULL,\n\t\"subject_slug\" text NOT NULL,\n\t\"score\" integer NOT NULL,\n\t\"total\" integer NOT NULL,\n\t\"note_on_20_tenths\" integer DEFAULT 0 NOT NULL,\n\t\"xp_earned\" integer DEFAULT 0 NOT NULL,\n\t\"duration_sec\" integer DEFAULT 0 NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+  "CREATE TABLE IF NOT EXISTS \"community_sheets\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"slug\" text NOT NULL,\n\t\"student_id\" integer NOT NULL,\n\t\"author_name\" text NOT NULL,\n\t\"section\" text NOT NULL,\n\t\"subject_slug\" text NOT NULL,\n\t\"period\" text DEFAULT 'T1' NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"summary\" text NOT NULL,\n\t\"content\" text NOT NULL,\n\t\"key_formula\" text DEFAULT '' NOT NULL,\n\t\"tags\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"status\" text DEFAULT 'pending' NOT NULL,\n\t\"moderation_note\" text DEFAULT '' NOT NULL,\n\t\"likes_count\" integer DEFAULT 0 NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+  "CREATE TABLE IF NOT EXISTS \"community_sheet_likes\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"sheet_id\" integer NOT NULL,\n\t\"student_id\" integer NOT NULL,\n\t\"voter_key\" text NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
   "CREATE TABLE IF NOT EXISTS \"subjects\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"slug\" text NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"short_name\" text NOT NULL,\n\t\"family\" text NOT NULL,\n\t\"icon\" text NOT NULL,\n\t\"accent\" text NOT NULL,\n\t\"description\" text NOT NULL,\n\t\"sections\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"order_index\" integer DEFAULT 0 NOT NULL\n);",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"exam_progress_unique_idx\" ON \"exam_progress\" USING btree (\"student_id\",\"exam_slug\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"exams_slug_idx\" ON \"exams\" USING btree (\"slug\");",
@@ -33,4 +35,8 @@ export const INIT_SQL_STATEMENTS: string[] = [
   "CREATE UNIQUE INDEX IF NOT EXISTS \"quizzes_slug_idx\" ON \"quizzes\" USING btree (\"slug\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"subjects_slug_idx\" ON \"subjects\" USING btree (\"slug\");",
   "CREATE INDEX IF NOT EXISTS \"score_history_student_created_idx\" ON \"score_history\" USING btree (\"student_id\",\"created_at\");",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"community_sheets_slug_idx\" ON \"community_sheets\" USING btree (\"slug\");",
+  "CREATE INDEX IF NOT EXISTS \"community_sheets_status_created_idx\" ON \"community_sheets\" USING btree (\"status\",\"created_at\");",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"community_sheet_likes_unique_idx\" ON \"community_sheet_likes\" USING btree (\"sheet_id\",\"voter_key\");",
+  "CREATE INDEX IF NOT EXISTS \"community_sheet_likes_sheet_idx\" ON \"community_sheet_likes\" USING btree (\"sheet_id\");",
 ];

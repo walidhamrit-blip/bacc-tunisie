@@ -1,6 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  communitySheets,
   examProgress,
   exams,
   exerciseProgress,
@@ -13,6 +14,7 @@ import {
   students,
   subjects,
 } from "@/db/schema";
+import { communitySheetsSeed } from "@/db/content/community-sheets";
 import { subjectSeeds } from "@/db/content/subjects";
 import { lessonsSeed } from "@/db/content/lessons-humanities";
 import { lessonProgramMeta } from "@/db/content/program";
@@ -34,7 +36,9 @@ async function chunkedInsert<T>(rows: T[], size: number, insert: (batch: T[]) =>
   }
 }
 
-async function countRows(table: typeof subjects | typeof lessons | typeof quizzes) {
+async function countRows(
+  table: typeof subjects | typeof lessons | typeof quizzes | typeof communitySheets,
+) {
   const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(table);
   return row?.count ?? 0;
 }
@@ -139,6 +143,7 @@ async function doSeed() {
 
   const quizTitleBySlug = new Map(quizzesSeed.map((quiz) => [quiz.slug, quiz.title]));
 
+  let activeStudentId = 1;
   const existing = await db.select().from(students).orderBy(asc(students.id)).limit(1);
   if (existing.length === 0) {
     const demoAttempts = [
@@ -168,6 +173,8 @@ async function doSeed() {
         lastActivityAt: new Date(),
       })
       .returning({ id: students.id });
+
+    activeStudentId = student.id;
 
     await db.insert(lessonProgress).values(
       [
@@ -224,6 +231,7 @@ async function doSeed() {
     // Migration douce pour une base déjà peuplée : si `score_history` est vide alors que
     // `quiz_attempts` contient déjà des essais, on reconstruit automatiquement l'historique et l'XP.
     const currentStudent = existing[0];
+    activeStudentId = currentStudent.id;
     const [{ count: historyCount }] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(scoreHistory)
@@ -293,6 +301,19 @@ async function doSeed() {
         }
       }
     }
+  }
+
+  // Initialisation idempotente de l'espace communautaire de fiches (sur base neuve ou déjà en ligne)
+  const communityCount = await countRows(communitySheets);
+  if (communityCount === 0) {
+    await chunkedInsert(
+      communitySheetsSeed.map((sheet) => ({
+        ...sheet,
+        studentId: activeStudentId,
+      })),
+      4,
+      (batch) => db.insert(communitySheets).values(batch).onConflictDoNothing(),
+    );
   }
 }
 

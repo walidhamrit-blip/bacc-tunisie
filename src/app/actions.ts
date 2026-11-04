@@ -1,9 +1,12 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
+  communitySheetLikes,
+  communitySheets,
   corrections,
   examProgress,
   exerciseProgress,
@@ -14,8 +17,19 @@ import {
   students,
   subjects,
 } from "@/db/schema";
+import {
+  buildCommunitySheetSlug,
+  validateCommunitySheetInput,
+} from "@/lib/community-validation";
 import { getStudent, type Student } from "@/lib/data";
 import { normalizeSection } from "@/lib/sections";
+
+export type CommunitySubmissionState = {
+  ok: boolean;
+  errors: string[];
+  message: string;
+  submittedAt?: number;
+};
 
 function computeNextStreakDays(lastActivityAt: Date | null, currentStreak: number, now: Date): number {
   if (!lastActivityAt) return 1;
@@ -236,6 +250,189 @@ export async function recordManualScore(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/evaluation");
+}
+
+/**
+ * Soumission d'une fiche courte de révision par un élève avec validation simple automatique
+ * et placement dans la file de modération avant publication publique.
+ */
+export async function submitCommunitySheet(
+  _prevState: CommunitySubmissionState,
+  formData: FormData,
+): Promise<CommunitySubmissionState> {
+  const student = await getStudent();
+  const subjectRows = await db.select({ slug: subjects.slug }).from(subjects);
+  const validSubjectSlugs = new Set(subjectRows.map((row) => row.slug));
+
+  const validation = validateCommunitySheetInput(
+    {
+      authorName: String(formData.get("authorName") ?? ""),
+      section: String(formData.get("section") ?? ""),
+      subjectSlug: String(formData.get("subjectSlug") ?? ""),
+      period: String(formData.get("period") ?? "T1"),
+      title: String(formData.get("title") ?? ""),
+      summary: String(formData.get("summary") ?? ""),
+      content: String(formData.get("content") ?? ""),
+      keyFormula: String(formData.get("keyFormula") ?? ""),
+      tagsRaw: String(formData.get("tagsRaw") ?? ""),
+    },
+    validSubjectSlugs,
+  );
+
+  if (!validation.ok) {
+    return {
+      ok: false,
+      errors: validation.errors,
+      message: "",
+    };
+  }
+
+  const { sanitized } = validation;
+  const slug = buildCommunitySheetSlug(sanitized.subjectSlug, sanitized.title);
+
+  await db.insert(communitySheets).values({
+    slug,
+    studentId: student.id,
+    authorName: sanitized.authorName,
+    section: sanitized.section,
+    subjectSlug: sanitized.subjectSlug,
+    period: sanitized.period,
+    title: sanitized.title,
+    summary: sanitized.summary,
+    content: sanitized.content,
+    keyFormula: sanitized.keyFormula,
+    tags: sanitized.tags,
+    status: "pending",
+    moderationNote: sanitized.moderationNote,
+    likesCount: 0,
+  });
+
+  await awardStudentXp(student, 15);
+
+  revalidatePath("/communaute");
+  revalidatePath("/evaluation");
+  revalidatePath("/");
+
+  return {
+    ok: true,
+    errors: [],
+    message:
+      "Fiche courte enregistrée (+15 XP) ! Elle a réussi le contrôle automatique et attend une validation simple en un clic ci-dessous.",
+    submittedAt: Date.now(),
+  };
+}
+
+/**
+ * Validation simple en un clic d'une fiche en attente (`approved` ou `rejected`).
+ */
+export async function moderateCommunitySheet(
+  sheetId: number,
+  decision: "approved" | "rejected",
+) {
+  if (!Number.isInteger(sheetId) || sheetId <= 0) return;
+
+  const student = await getStudent();
+  await db
+    .update(communitySheets)
+    .set({
+      status: decision,
+      moderationNote:
+        decision === "approved"
+          ? "Validée et publiée dans l'espace communautaire."
+          : "Refusée lors de la validation simple.",
+    })
+    .where(eq(communitySheets.id, sheetId));
+
+  if (decision === "approved") {
+    await awardStudentXp(student, 20);
+  }
+
+  revalidatePath("/communaute");
+  revalidatePath("/evaluation");
+  revalidatePath("/");
+}
+
+/**
+ * Ajoute ou retire un « J'aime » sur une fiche communautaire de manière atomique.
+ */
+export async function toggleCommunitySheetLike(sheetId: number): Promise<{
+  liked: boolean;
+  likesCount: number;
+} | null> {
+  if (!Number.isInteger(sheetId) || sheetId <= 0) return null;
+
+  const student = await getStudent();
+  const cookieStore = await cookies();
+  let voterKey = cookieStore.get("bac_voter")?.value ?? "";
+
+  if (!voterKey) {
+    const generated = `voter-${crypto.randomUUID()}`;
+    try {
+      cookieStore.set("bac_voter", generated, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+      });
+      voterKey = generated;
+    } catch {
+      voterKey = `student-${student.id}`;
+    }
+  }
+
+  const existing = await db
+    .select({ id: communitySheetLikes.id })
+    .from(communitySheetLikes)
+    .where(
+      and(
+        eq(communitySheetLikes.sheetId, sheetId),
+        eq(communitySheetLikes.voterKey, voterKey),
+      ),
+    )
+    .limit(1);
+
+  let liked: boolean;
+
+  if (existing.length > 0) {
+    await db
+      .delete(communitySheetLikes)
+      .where(eq(communitySheetLikes.id, existing[0].id));
+    await db
+      .update(communitySheets)
+      .set({
+        likesCount: sql`greatest(0, ${communitySheets.likesCount} - 1)`,
+      })
+      .where(eq(communitySheets.id, sheetId));
+    liked = false;
+  } else {
+    await db
+      .insert(communitySheetLikes)
+      .values({
+        sheetId,
+        studentId: student.id,
+        voterKey,
+      })
+      .onConflictDoNothing();
+    await db
+      .update(communitySheets)
+      .set({
+        likesCount: sql`${communitySheets.likesCount} + 1`,
+      })
+      .where(eq(communitySheets.id, sheetId));
+    liked = true;
+  }
+
+  const [updated] = await db
+    .select({ likesCount: communitySheets.likesCount })
+    .from(communitySheets)
+    .where(eq(communitySheets.id, sheetId))
+    .limit(1);
+
+  revalidatePath("/communaute");
+
+  return {
+    liked,
+    likesCount: updated?.likesCount ?? 0,
+  };
 }
 
 export async function updateStudentProfile(formData: FormData) {
