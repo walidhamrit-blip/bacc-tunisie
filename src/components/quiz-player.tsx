@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { recordQuizAttempt } from "@/app/actions";
+import { recordQuizAttempt, type QuizMistakePayload } from "@/app/actions";
 import type { QuizQuestion } from "@/db/schema";
 
 export function QuizPlayer({
@@ -27,10 +27,16 @@ export function QuizPlayer({
 
   const question = questions[index];
   const score = useMemo(
-    () => answers.reduce((sum, answer, answerIndex) => (answer === questions[answerIndex]?.answerIndex ? sum + 1 : sum), 0),
+    () =>
+      answers.reduce(
+        (sum, answer, answerIndex) =>
+          answer === questions[answerIndex]?.answerIndex ? sum + 1 : sum,
+        0,
+      ),
     [answers, questions],
   );
   const total = questions.length;
+  const wrongCount = Math.max(0, total - score);
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
   const progress = Math.round(((index + (validated ? 1 : 0)) / total) * 100);
 
@@ -46,9 +52,29 @@ export function QuizPlayer({
 
   function next() {
     if (index + 1 >= total) {
+      const mistakes: QuizMistakePayload[] = [];
+      let computedScore = 0;
+
+      questions.forEach((q, qIdx) => {
+        const chosenIdx = answers[qIdx];
+        if (chosenIdx === q.answerIndex) {
+          computedScore += 1;
+        } else {
+          mistakes.push({
+            prompt: q.prompt,
+            wrongAnswer:
+              chosenIdx !== undefined && q.choices[chosenIdx]
+                ? q.choices[chosenIdx]
+                : "Aucune réponse sélectionnée",
+            correctAnswer: q.choices[q.answerIndex] ?? "",
+            explanation: q.explanation,
+          });
+        }
+      });
+
       setFinished(true);
       startTransition(async () => {
-        await recordQuizAttempt(quizSlug, subjectSlug, score, total);
+        await recordQuizAttempt(quizSlug, subjectSlug, computedScore, total, 0, mistakes);
         router.refresh();
       });
       return;
@@ -86,7 +112,7 @@ export function QuizPlayer({
               {score} / {total} · {percent} %
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button type="button" onClick={restart} className="btn btn-ghost btn-sm">
               Refaire
             </button>
@@ -103,6 +129,27 @@ export function QuizPlayer({
         </div>
         <p className="mt-3 text-sm text-[var(--ink-soft)]">{message}</p>
         {isPending ? <p className="mt-2 text-xs text-[var(--ink-soft)]">Enregistrement en cours…</p> : null}
+
+        {wrongCount > 0 ? (
+          <div
+            className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 text-xs"
+            style={{
+              background: "var(--callout-info-bg)",
+              borderColor: "var(--callout-info-border)",
+            }}
+          >
+            <p className="text-[var(--ink)]">
+              <strong style={{ color: "var(--callout-info-ink)" }}>
+                🧠 Répétition Espacée (SRS) :
+              </strong>{" "}
+              <strong>{wrongCount}</strong> erreur{wrongCount > 1 ? "s ont été ajoutées" : " a été ajoutée"}{" "}
+              automatiquement à ton <strong>Carnet d&apos;Erreurs Intelligent</strong> pour ne plus tomber dans ce piège le jour du Bac.
+            </p>
+            <Link href="/carnet-erreurs" className="btn btn-dark btn-sm shrink-0">
+              Ouvrir mon Carnet SRS →
+            </Link>
+          </div>
+        ) : null}
 
         <div className="mt-6 space-y-3">
           <p className="text-sm font-semibold text-[var(--ink)]">Correction détaillée</p>

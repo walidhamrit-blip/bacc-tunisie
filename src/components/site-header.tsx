@@ -10,6 +10,7 @@ const NAV = [
   { href: "/cours", label: "Cours" },
   { href: "/communaute", label: "Communauté" },
   { href: "/flashcards", label: "Flashcards" },
+  { href: "/carnet-erreurs", label: "Carnet SRS" },
   { href: "/exercices", label: "Exercices" },
   { href: "/examens", label: "Examens" },
   { href: "/bac-blanc", label: "Bac Blanc" },
@@ -47,7 +48,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.74rem] font-semibold transition ${
+              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.72rem] font-semibold transition ${
                 isActive(item.href)
                   ? "bg-[var(--ink)] text-[var(--cream)]"
                   : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"

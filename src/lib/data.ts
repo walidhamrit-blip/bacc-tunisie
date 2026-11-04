@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import {
@@ -6,6 +6,7 @@ import {
   communitySheetLikes,
   communitySheets,
   corrections,
+  errorCards,
   examProgress,
   exams,
   exerciseProgress,
@@ -34,6 +35,7 @@ export type Exam = typeof exams.$inferSelect;
 export type Quiz = typeof quizzes.$inferSelect;
 export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
 export type BacSimulation = typeof bacSimulations.$inferSelect;
+export type ErrorCardItem = typeof errorCards.$inferSelect;
 export type CommunitySheet = typeof communitySheets.$inferSelect;
 
 export type StudentSessionStatus =
@@ -386,6 +388,29 @@ export async function listBacSimulations(): Promise<BacSimulation[]> {
     .where(eq(bacSimulations.studentId, student.id))
     .orderBy(desc(bacSimulations.createdAt))
     .limit(15);
+}
+
+/**
+ * Liste les cartes du Carnet d'Erreurs SRS de l'élève courant (triées par échéance prioritaire),
+ * strictement filtrées sur les matières officielles de sa section lorsque son abonnement est verrouillé.
+ */
+export async function listErrorCards(): Promise<ErrorCardItem[]> {
+  await ensureSeeded();
+  const [student, scope] = await Promise.all([
+    getStudent(),
+    getLockedSectionScope(),
+  ]);
+
+  const rows = await db
+    .select()
+    .from(errorCards)
+    .where(eq(errorCards.studentId, student.id))
+    .orderBy(asc(errorCards.nextReviewAt), desc(errorCards.lapsesCount));
+
+  if (scope.allowedSubjectSlugs) {
+    return rows.filter((row) => scope.allowedSubjectSlugs!.has(row.subjectSlug));
+  }
+  return rows;
 }
 
 export async function getDashboard() {

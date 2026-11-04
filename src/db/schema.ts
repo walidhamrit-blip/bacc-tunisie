@@ -68,6 +68,15 @@ export type ScoreActivityType = "quiz" | "bac-blanc" | "devoir";
 
 export type CommunitySheetStatus = "pending" | "approved" | "rejected";
 
+export type ErrorCardSourceType = "quiz" | "bac-blanc" | "manuel";
+
+export type ErrorCardCategoryType =
+  | "formule"
+  | "methode"
+  | "calcul"
+  | "comprehension"
+  | "inattention";
+
 export const subjects = pgTable(
   "subjects",
   {
@@ -282,6 +291,44 @@ export const bacSimulations = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("bac_simulations_student_created_idx").on(table.studentId, table.createdAt)],
+);
+
+/**
+ * Carnet d'Erreurs Intelligent & Répétition Espacée (SRS SM-2 + Boîtes de Leitner 1 à 5).
+ * Collecte automatiquement les erreurs aux quiz et permet d'ajouter ses erreurs de devoirs.
+ */
+export const errorCards = pgTable(
+  "error_cards",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    subjectSlug: text("subject_slug").notNull(),
+    sourceType: text("source_type").$type<ErrorCardSourceType>().notNull().default("quiz"),
+    sourceSlug: text("source_slug").notNull().default(""),
+    sourceTitle: text("source_title").notNull().default(""),
+    prompt: text("prompt").notNull(),
+    wrongAnswer: text("wrong_answer").notNull().default(""),
+    correctAnswer: text("correct_answer").notNull(),
+    explanation: text("explanation").notNull().default(""),
+    errorCategory: text("error_category")
+      .$type<ErrorCardCategoryType>()
+      .notNull()
+      .default("comprehension"),
+    boxLevel: integer("box_level").notNull().default(1),
+    easeFactorPermille: integer("ease_factor_permille").notNull().default(2500),
+    intervalDays: integer("interval_days").notNull().default(0),
+    repetitions: integer("repetitions").notNull().default(0),
+    lapsesCount: integer("lapses_count").notNull().default(1),
+    mastered: boolean("mastered").notNull().default(false),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("error_cards_student_fingerprint_idx").on(table.studentId, table.fingerprint),
+    index("error_cards_student_due_idx").on(table.studentId, table.nextReviewAt),
+  ],
 );
 
 /**

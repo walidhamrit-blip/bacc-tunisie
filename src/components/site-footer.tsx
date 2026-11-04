@@ -8,19 +8,20 @@ export function SiteFooter() {
           <p className="display text-xl font-semibold text-[var(--ink)]">Bac Coach Tunisie</p>
           <p className="mt-3 max-w-sm text-sm text-[var(--ink-soft)]">
             Un accompagnement pédagogique pour les élèves de baccalauréat : fiches de cours, séries et examens
-            corrigés, quiz, simulateur officiel de moyenne &amp; score FG, et évaluation de niveau matière par matière.
+            corrigés, quiz, répétition espacée (SRS), simulateur officiel de moyenne &amp; score FG, et évaluation de niveau.
           </p>
           <p className="mt-4 text-xs text-[var(--ink-soft)]">
             Programme officiel tunisien · Abonnement individuel dédié à une seule section par inscription.
           </p>
         </div>
         <div>
-          <p className="eyebrow mb-3">Apprendre</p>
+          <p className="eyebrow mb-3">Apprendre &amp; Mémoriser</p>
           <ul className="space-y-2 text-sm text-[var(--ink-soft)]">
             <li><Link className="hover:text-[var(--brand)]" href="/matieres">Toutes les matières</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/cours">Fiches de cours</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/communaute">Espace communautaire de fiches</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/flashcards">Cartes mémos (Flashcards)</Link></li>
+            <li><Link className="hover:text-[var(--brand)]" href="/carnet-erreurs">Carnet d&apos;erreurs &amp; SRS</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/exercices">Exercices corrigés</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/examens">Examens &amp; séries</Link></li>
           </ul>
