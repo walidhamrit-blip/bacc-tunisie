@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Flashcards, type FlashcardItemData } from "@/components/flashcards";
 import { EmptyState, PageHeader, PageShell } from "@/components/ui";
-import { listLessons, listSubjects } from "@/lib/data";
+import { getStudent, listLessons, listSubjects } from "@/lib/data";
 import { SECTIONS } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,17 @@ export default async function FlashcardsPage({
   searchParams: Promise<{ matiere?: string; section?: string }>;
 }) {
   const params = await searchParams;
-  const [subjects, lessons] = await Promise.all([listSubjects(), listLessons()]);
+  const [subjects, lessons, student] = await Promise.all([
+    listSubjects(),
+    listLessons(),
+    getStudent(),
+  ]);
 
+  const locked = isLockedStudent(student);
   const activeSubject = params.matiere ?? null;
-  const activeSection =
-    params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
+  const activeSection = locked
+    ? student.section
+    : params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
       ? params.section
       : null;
 
@@ -42,8 +49,12 @@ export default async function FlashcardsPage({
   const buildFilterHref = (next: { matiere?: string | null; section?: string | null }) => {
     const search = new URLSearchParams();
     const matiere = next.matiere === undefined ? activeSubject : next.matiere;
-    const section = next.section === undefined ? activeSection : next.section;
-    if (section) search.set("section", section);
+    const section = locked
+      ? student.section
+      : next.section === undefined
+        ? activeSection
+        : next.section;
+    if (section && !locked) search.set("section", section);
     if (matiere) search.set("matiere", matiere);
     const query = search.toString();
     return query ? `/flashcards?${query}` : "/flashcards";
@@ -69,23 +80,32 @@ export default async function FlashcardsPage({
 
       <div className="mb-6 grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-3.5 sm:grid-cols-[auto_1fr] sm:items-center">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-          <Link
-            href={buildFilterHref({ section: null })}
-            className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
-          >
-            Toutes
-          </Link>
-          {SECTIONS.map((section) => (
+        {locked ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip chip-active">🔒 {student.section}</span>
+            <span className="text-xs text-[var(--ink-soft)]">
+              Cartes filtrées sur l&apos;unique section de ton abonnement
+            </span>
+          </div>
+        ) : (
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             <Link
-              key={section}
-              href={buildFilterHref({ section })}
-              className={`chip whitespace-nowrap ${activeSection === section ? "chip-active" : ""}`}
+              href={buildFilterHref({ section: null })}
+              className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
             >
-              {section}
+              Toutes
             </Link>
-          ))}
-        </div>
+            {SECTIONS.map((section) => (
+              <Link
+                key={section}
+                href={buildFilterHref({ section })}
+                className={`chip whitespace-nowrap ${activeSection === section ? "chip-active" : ""}`}
+              >
+                {section}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Matière</p>
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
@@ -112,8 +132,8 @@ export default async function FlashcardsPage({
       {deckCards.length === 0 ? (
         <EmptyState
           title="Aucune carte mémo pour ce filtre"
-          text="Essaie une autre matière ou affiche toutes les filières pour réviser l'ensemble des cartes."
-          action={{ href: "/flashcards", label: "Voir toutes les cartes" }}
+          text="Essaie une autre matière de ta section pour réviser tes cartes."
+          action={{ href: "/flashcards", label: "Voir toutes mes cartes" }}
         />
       ) : (
         <div className="mx-auto max-w-2xl">

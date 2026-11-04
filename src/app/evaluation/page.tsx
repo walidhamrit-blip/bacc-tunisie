@@ -10,6 +10,7 @@ import {
   listQuizzes,
 } from "@/lib/data";
 import { SECTIONS } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function EvaluationPage() {
     getStudent(),
   ]);
 
+  const locked = isLockedStudent(student);
   const rows = [...dashboard.tracked].sort((a, b) => a.mastery - b.mastery);
   const nextQuizSlug = dashboard.nextQuiz?.slug ?? quizzes[0]?.slug ?? "";
   const nextLesson = dashboard.weakest
@@ -46,15 +48,34 @@ export default async function EvaluationPage() {
                 Améliorer mon niveau
               </Link>
             ) : null}
+            <Link href="/mon-compte" className="btn btn-ghost btn-sm">
+              {locked ? `🔒 ${student.section}` : "🔒 S'inscrire (1 section)"}
+            </Link>
             <Link href="/bac-blanc" className="btn btn-ghost btn-sm">
               Bac Blanc chrono
-            </Link>
-            <Link href="/correction" className="btn btn-ghost btn-sm">
-              Corriger un PDF
             </Link>
           </>
         }
       />
+
+      {!locked ? (
+        <div
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-xs"
+          style={{
+            background: "var(--callout-warn-bg)",
+            borderColor: "var(--callout-warn-border)",
+          }}
+        >
+          <p className="text-[var(--ink)]">
+            <strong>Mode démonstration partagé :</strong> crée gratuitement ton{" "}
+            <strong>abonnement personnel mono-section</strong> pour isoler tes notes, verrouiller ton
+            programme officiel et obtenir ton Code Élève (téléphone + ordinateur).
+          </p>
+          <Link href="/mon-compte" className="btn btn-primary btn-sm shrink-0">
+            🔒 Créer mon compte (1 section) →
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -97,7 +118,7 @@ export default async function EvaluationPage() {
       <section className="card mt-6 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
           <div>
-            <p className="eyebrow">Évaluation détaillée</p>
+            <p className="eyebrow">Évaluation détaillée · {student.section}</p>
             <h2 className="display text-xl font-semibold text-[var(--ink)]">Tableau de niveau par matière</h2>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -112,7 +133,7 @@ export default async function EvaluationPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[840px] border-collapse text-left text-sm">
             <thead>
-              <tr className="bg-[#f8f4ec] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+              <tr className="bg-[var(--surface-subtle)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
                 <th className="px-5 py-3 font-bold">Matière</th>
                 <th className="px-3 py-3 font-bold">Fiches</th>
                 <th className="px-3 py-3 font-bold">Exercices</th>
@@ -297,31 +318,62 @@ export default async function EvaluationPage() {
         </section>
 
         <section className="card p-5">
-          <p className="eyebrow">Mon profil</p>
-          <h2 className="display text-lg font-semibold text-[var(--ink)]">Préférences d&apos;évaluation</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="eyebrow">Mon profil</p>
+              <h2 className="display text-lg font-semibold text-[var(--ink)]">
+                {locked ? "Mon abonnement mono-section" : "Profil de démonstration"}
+              </h2>
+            </div>
+            {locked && student.syncCode ? (
+              <span className="badge badge-brand font-mono">{student.syncCode}</span>
+            ) : null}
+          </div>
+
           <p className="mt-1 text-xs text-[var(--ink-soft)]">
-            Le profil est de démonstration : change le prénom et la section pour recalculer immédiatement tes
-            coefficients et ta probabilité de mention.
+            {locked
+              ? `Ton abonnement est définitivement rattaché à la section « ${student.section} » (1 abonnement = 1 seule section).`
+              : "En mode démo, tu peux tester une filière ou créer ton compte personnel verrouillé sur une seule section."}
           </p>
+
           <form action={updateStudentProfile} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr]">
             <label className="block text-sm">
               <span className="mb-1 block font-semibold text-[var(--ink)]">Prénom</span>
               <input className="input" name="name" defaultValue={student.name} maxLength={80} />
             </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-[var(--ink)]">Section</span>
-              <select className="select" name="section" defaultValue={student.section}>
-                {SECTIONS.map((section) => (
-                  <option key={section} value={section}>
-                    {section}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="sm:col-span-2">
+
+            {locked ? (
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-[var(--ink)]">
+                  Section (verrouillée)
+                </span>
+                <input
+                  className="input cursor-not-allowed !bg-[var(--surface-subtle)] opacity-85"
+                  value={`🔒 ${student.section}`}
+                  disabled
+                  readOnly
+                />
+              </label>
+            ) : (
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-[var(--ink)]">Section (démo)</span>
+                <select className="select" name="section" defaultValue={student.section}>
+                  {SECTIONS.map((section) => (
+                    <option key={section} value={section}>
+                      {section}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
               <button type="submit" className="btn btn-dark btn-sm">
                 Enregistrer mon profil
               </button>
+              <Link href="/mon-compte" className="btn btn-ghost btn-sm">
+                {locked ? "Gérer mon Code Élève & mes appareils" : "S'inscrire (1 section) →"}
+              </Link>
             </div>
           </form>
 
@@ -354,7 +406,7 @@ export default async function EvaluationPage() {
               <li key={correction.id}>
                 <Link
                   href={`/correction/${correction.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2.5 transition hover:border-[#cdbfa8] hover:bg-[#fcfaf5]"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2.5 transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)]"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-[var(--ink)]">

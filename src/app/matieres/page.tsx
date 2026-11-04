@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDashboard, listExams, listExercises, listLessons, listQuizzes, listSubjects } from "@/lib/data";
 import { LevelPill, PageHeader, PageShell, ProgressBar, SubjectGlyph } from "@/components/ui";
 import { SECTIONS } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 import { programSectionSubjects } from "@/db/content/program";
 
 export const dynamic = "force-dynamic";
@@ -12,17 +13,21 @@ export default async function SubjectsPage({
   searchParams: Promise<{ section?: string }>;
 }) {
   const params = await searchParams;
-  const section = params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
-    ? params.section
-    : "Toutes les sections";
+  const dashboard = await getDashboard();
+  const locked = isLockedStudent(dashboard.student);
 
-  const [subjects, lessons, exercises, exams, quizzes, dashboard] = await Promise.all([
+  const section = locked
+    ? dashboard.student.section
+    : params.section && SECTIONS.includes(params.section as (typeof SECTIONS)[number])
+      ? params.section
+      : "Toutes les sections";
+
+  const [subjects, lessons, exercises, exams, quizzes] = await Promise.all([
     listSubjects(section),
     listLessons(),
     listExercises(),
     listExams(),
     listQuizzes(),
-    getDashboard(),
   ]);
 
   const levelBySlug = new Map(dashboard.subjectLevels.map((row) => [row.subject.slug, row]));
@@ -36,11 +41,14 @@ export default async function SubjectsPage({
     <PageShell>
       <PageHeader
         eyebrow="Programme officiel tunisien"
-        title="Toutes les matières du baccalauréat"
+        title={locked ? `Matières de ta section · ${section}` : "Toutes les matières du baccalauréat"}
         description={
           <p>
             Choisis ta matière pour accéder aux fiches de cours, aux exercices corrigés, aux séries et examens ainsi
-            qu&apos;aux quiz. Filtre par section pour ne voir que ton programme.
+            qu&apos;aux quiz.{" "}
+            {locked
+              ? "Ton abonnement individuel est verrouillé sur ton unique section officielle."
+              : "Filtre par section pour ne voir que ton programme."}
           </p>
         }
         actions={
@@ -50,32 +58,48 @@ export default async function SubjectsPage({
         }
       />
 
-      <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1">
-        <Link href="/matieres" className={`chip ${section === "Toutes les sections" ? "chip-active" : ""}`}>
-          Toutes les sections
-        </Link>
-        {SECTIONS.map((item) => (
-          <Link
-            key={item}
-            href={`/matieres?section=${encodeURIComponent(item)}`}
-            className={`chip whitespace-nowrap ${section === item ? "chip-active" : ""}`}
-          >
-            {item}
-          </Link>
-        ))}
-      </div>
-
-      {section !== "Toutes les sections" ? (
-        <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-soft)]">
-          <span className="badge badge-slate">{visibleSubjects.length} matières dans cette filière</span>
+      {locked ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-3 text-xs">
+          <span className="font-semibold text-[var(--ink)]">
+            🔒 Section verrouillée : <strong>{section}</strong> ({visibleSubjects.length} matières au programme)
+          </span>
           <Link
             href={`/programme?section=${encodeURIComponent(section)}`}
             className="font-semibold text-[var(--brand)]"
           >
-            Voir le programme complet de la filière (chapitres + trimestres) →
+            Voir mon programme complet (chapitres + trimestres) →
           </Link>
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1">
+            <Link href="/matieres" className={`chip ${section === "Toutes les sections" ? "chip-active" : ""}`}>
+              Toutes les sections
+            </Link>
+            {SECTIONS.map((item) => (
+              <Link
+                key={item}
+                href={`/matieres?section=${encodeURIComponent(item)}`}
+                className={`chip whitespace-nowrap ${section === item ? "chip-active" : ""}`}
+              >
+                {item}
+              </Link>
+            ))}
+          </div>
+
+          {section !== "Toutes les sections" ? (
+            <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-soft)]">
+              <span className="badge badge-slate">{visibleSubjects.length} matières dans cette filière</span>
+              <Link
+                href={`/programme?section=${encodeURIComponent(section)}`}
+                className="font-semibold text-[var(--brand)]"
+              >
+                Voir le programme complet de la filière (chapitres + trimestres) →
+              </Link>
+            </div>
+          ) : null}
+        </>
+      )}
 
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {visibleSubjects.map((subject) => {
@@ -105,7 +129,7 @@ export default async function SubjectsPage({
                   [examCount, "séries"],
                   [quizCount, "quiz"],
                 ].map(([value, label]) => (
-                  <div key={String(label)} className="rounded-lg bg-[#faf7f0] py-1.5">
+                  <div key={String(label)} className="rounded-lg bg-[var(--surface-subtle)] py-1.5">
                     <p className="text-sm font-bold text-[var(--ink)]">{value}</p>
                     <p className="text-[0.6rem] uppercase tracking-[0.06em] text-[var(--ink-soft)]">{label}</p>
                   </div>

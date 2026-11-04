@@ -3,6 +3,7 @@ import { CorrectionForm } from "@/components/correction-form";
 import { PageHeader, PageShell, Callout } from "@/components/ui";
 import { getDashboard, listCorrections, listSubjects } from "@/lib/data";
 import { SECTIONS } from "@/lib/sections";
+import { isLockedStudent } from "@/lib/student-session";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,11 @@ export default async function CorrectionPage({
     getDashboard(),
     listCorrections(),
   ]);
+
+  const locked = isLockedStudent(dashboard.student);
+  const allowedSections: readonly string[] = locked
+    ? [dashboard.student.section]
+    : SECTIONS;
 
   return (
     <PageShell>
@@ -45,7 +51,7 @@ export default async function CorrectionPage({
       <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
         <CorrectionForm
           subjects={subjects.map((subject) => ({ slug: subject.slug, name: subject.name }))}
-          sections={SECTIONS}
+          sections={allowedSections}
           defaultSection={dashboard.student.section}
           defaultSubject={params.matiere}
         />
@@ -73,7 +79,7 @@ export default async function CorrectionPage({
             garantit pas le barème exact. Vérifie toujours la rédaction avec ton enseignant.
           </Callout>
 
-          <section className="card border-[#d9c9a4] bg-[#fdf6e7] p-5">
+          <section className="card border-[var(--line)] bg-[var(--surface-subtle)] p-5">
             <p className="eyebrow">Astuce pour un meilleur résultat</p>
             <p className="mt-1.5 text-sm text-[var(--ink-soft)]">
               Si le PDF est une photo scannée, le texte n&apos;est pas lisible : copie-colle l&apos;énoncé dans la zone
@@ -97,7 +103,7 @@ export default async function CorrectionPage({
               <li key={correction.id}>
                 <Link
                   href={`/correction/${correction.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 transition hover:border-[#cdbfa8] hover:bg-[#fcfaf5]"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 transition hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)]"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-[var(--ink)]">
