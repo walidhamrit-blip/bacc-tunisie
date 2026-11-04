@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -62,6 +63,8 @@ export type CorrectionAnalysis = {
   relatedExerciseSlugs: string[];
   warnings: string[];
 };
+
+export type ScoreActivityType = "quiz" | "bac-blanc" | "devoir";
 
 export const subjects = pgTable(
   "subjects",
@@ -164,6 +167,9 @@ export const students = pgTable("students", {
   name: text("name").notNull(),
   section: text("section").notNull(),
   isDemo: boolean("is_demo").notNull().default(true),
+  xpPoints: integer("xp_points").notNull().default(0),
+  streakDays: integer("streak_days").notNull().default(0),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -212,6 +218,30 @@ export const quizAttempts = pgTable("quiz_attempts", {
   total: integer("total").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Historique enrichi des scores (quiz, Bac Blanc chronométrés et notes de devoirs)
+ * servant au suivi gamifié (XP) et au calcul de la Probabilité de Mention au Bac.
+ */
+export const scoreHistory = pgTable(
+  "score_history",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id").notNull(),
+    activityType: text("activity_type").$type<ScoreActivityType>().notNull().default("quiz"),
+    activitySlug: text("activity_slug").notNull(),
+    activityTitle: text("activity_title").notNull().default(""),
+    subjectSlug: text("subject_slug").notNull(),
+    score: integer("score").notNull(),
+    total: integer("total").notNull(),
+    /** Note ramenée sur 20 exprimée en dixièmes (ex: 145 = 14,5 / 20). */
+    noteOn20Tenths: integer("note_on_20_tenths").notNull().default(0),
+    xpEarned: integer("xp_earned").notNull().default(0),
+    durationSec: integer("duration_sec").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("score_history_student_created_idx").on(table.studentId, table.createdAt)],
+);
 
 export const corrections = pgTable(
   "corrections",

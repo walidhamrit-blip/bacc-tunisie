@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { resetStudentProgress, updateStudentProfile } from "@/app/actions";
+import { MentionGamificationCard } from "@/components/mention-gamification-card";
+import { LevelPill, PageHeader, PageShell, ProgressBar, StatCard, SubjectGlyph } from "@/components/ui";
 import {
   getDashboard,
   getStudent,
@@ -7,7 +9,6 @@ import {
   listCorrections,
   listQuizzes,
 } from "@/lib/data";
-import { LevelPill, PageHeader, PageShell, ProgressBar, StatCard, SubjectGlyph } from "@/components/ui";
 import { SECTIONS } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,6 @@ export default async function EvaluationPage() {
     getStudent(),
   ]);
 
-  const quizTitles = new Map(quizzes.map((quiz) => [quiz.slug, quiz.title]));
   const rows = [...dashboard.tracked].sort((a, b) => a.mastery - b.mastery);
   const nextQuizSlug = dashboard.nextQuiz?.slug ?? quizzes[0]?.slug ?? "";
   const nextLesson = dashboard.weakest
@@ -30,12 +30,13 @@ export default async function EvaluationPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Tableau d'évaluation de niveau"
-        title="Où en es-tu, matière par matière ?"
+        eyebrow="Tableau d'évaluation de niveau & Gamification"
+        title="Où en es-tu, et quelle mention peux-tu viser ?"
         description={
           <p>
-            Ce tableau combine les quiz passés, les fiches marquées comme comprises, les exercices travaillés et les
-            séries faites. Il te donne un niveau par matière et l&apos;étape la plus utile à faire maintenant.
+            Ce tableau combine ton historique de scores (quiz, Bac Blanc chronométrés, notes de devoirs), les fiches
+            comprises et les coefficients officiels de ta filière pour estimer ta{" "}
+            <strong className="text-[var(--ink)]">Probabilité de Mention</strong> au Baccalauréat.
           </p>
         }
         actions={
@@ -45,6 +46,9 @@ export default async function EvaluationPage() {
                 Améliorer mon niveau
               </Link>
             ) : null}
+            <Link href="/bac-blanc" className="btn btn-ghost btn-sm">
+              Bac Blanc chrono
+            </Link>
             <Link href="/correction" className="btn btn-ghost btn-sm">
               Corriger un PDF
             </Link>
@@ -54,26 +58,39 @@ export default async function EvaluationPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Maîtrise globale"
-          value={`${dashboard.overallMastery}%`}
-          hint={dashboard.overallLevel.label}
+          label="Moyenne projetée"
+          value={`${dashboard.mentionPrediction.projectedAverage20.toFixed(2).replace(".", ",")}/20`}
+          hint={
+            dashboard.mentionPrediction.mostLikelyMention
+              ? `Cap : Mention ${dashboard.mentionPrediction.mostLikelyMention.label}`
+              : dashboard.overallLevel.label
+          }
           tone="var(--brand)"
         />
         <StatCard
-          label="Fiches comprises"
-          value={dashboard.stats.lessonsDone}
-          hint="sur l'ensemble du programme disponible"
+          label="Expérience & Rang"
+          value={`${dashboard.mentionPrediction.gamification.rank.currentXp} XP`}
+          hint={`Niv. ${dashboard.mentionPrediction.gamification.rank.level} · ${dashboard.mentionPrediction.gamification.rank.title}`}
+          tone="var(--gold)"
         />
         <StatCard
           label="Réussite aux quiz"
           value={dashboard.stats.quizSuccess === null ? "—" : `${dashboard.stats.quizSuccess}%`}
-          hint={`${dashboard.stats.quizCount} tentative(s) enregistrée(s)`}
+          hint={`${dashboard.stats.quizCount} score(s) dans l'historique`}
           tone="var(--green)"
         />
         <StatCard
-          label="Exercices travaillés"
-          value={dashboard.stats.exercisesDone}
-          hint={`${dashboard.stats.examsDone} série(s) · ${dashboard.stats.corrections} correction(s) PDF`}
+          label="Progression cours"
+          value={dashboard.stats.lessonsDone}
+          hint={`${dashboard.stats.exercisesDone} exercice(s) · ${dashboard.stats.examsDone} série(s)`}
+        />
+      </div>
+
+      {/* SECTION ÉTAPE 6 : GAMIFICATION & PROBABILITÉ DE MENTION */}
+      <div className="mt-6">
+        <MentionGamificationCard
+          prediction={dashboard.mentionPrediction}
+          history={dashboard.scoreHistory}
         />
       </div>
 
@@ -100,7 +117,7 @@ export default async function EvaluationPage() {
                 <th className="px-3 py-3 font-bold">Fiches</th>
                 <th className="px-3 py-3 font-bold">Exercices</th>
                 <th className="px-3 py-3 font-bold">Séries</th>
-                <th className="px-3 py-3 font-bold">Quiz</th>
+                <th className="px-3 py-3 font-bold">Scores</th>
                 <th className="px-3 py-3 font-bold">Maîtrise</th>
                 <th className="px-3 py-3 font-bold">Niveau</th>
                 <th className="px-5 py-3 font-bold">Étape suivante</th>
@@ -129,7 +146,7 @@ export default async function EvaluationPage() {
                   </td>
                   <td className="px-3 py-3 text-[var(--ink-soft)]">
                     {row.quizAverage === null ? "—" : `${row.quizAverage}%`}
-                    <span className="block text-[0.65rem]">{row.quizCount} essai(s)</span>
+                    <span className="block text-[0.65rem]">{row.quizCount} score(s)</span>
                   </td>
                   <td className="px-3 py-3">
                     <div className="w-28">
@@ -227,39 +244,50 @@ export default async function EvaluationPage() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
         <section className="card p-5">
-          <p className="eyebrow">Historique récent</p>
-          <h2 className="display text-lg font-semibold text-[var(--ink)]">Derniers quiz</h2>
-          {dashboard.recentAttempts.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">Aucune tentative enregistrée pour le moment.</p>
+          <p className="eyebrow">Historique des scores (`score_history`)</p>
+          <h2 className="display text-lg font-semibold text-[var(--ink)]">
+            Derniers quiz, Bac Blanc &amp; devoirs
+          </h2>
+          {dashboard.scoreHistory.length === 0 ? (
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">Aucun score enregistré pour le moment.</p>
           ) : (
             <ul className="mt-3 space-y-2">
-              {dashboard.recentAttempts.map((attempt) => {
-                const percent = Math.round((attempt.score / Math.max(attempt.total, 1)) * 100);
+              {dashboard.scoreHistory.map((entry) => {
+                const note20 =
+                  entry.noteOn20Tenths > 0
+                    ? entry.noteOn20Tenths / 10
+                    : (entry.score / Math.max(entry.total, 1)) * 20;
+                const typeLabel =
+                  entry.activityType === "bac-blanc"
+                    ? "Bac Blanc"
+                    : entry.activityType === "devoir"
+                      ? "Devoir"
+                      : "Quiz";
                 return (
                   <li
-                    key={attempt.id}
+                    key={entry.id}
                     className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[var(--ink)]">
-                        {quizTitles.get(attempt.quizSlug) ?? attempt.quizSlug}
+                        {entry.activityTitle || entry.activitySlug}
                       </p>
                       <p className="text-[0.68rem] text-[var(--ink-soft)]">
-                        {new Date(attempt.createdAt).toLocaleDateString("fr-FR", {
+                        {typeLabel} ·{" "}
+                        {new Date(entry.createdAt).toLocaleDateString("fr-FR", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
                         })}
+                        {entry.xpEarned > 0 ? ` · +${entry.xpEarned} XP` : ""}
                       </p>
                     </div>
                     <span
-                      className="badge"
-                      style={{
-                        background: percent >= 75 ? "var(--green-soft)" : percent >= 50 ? "var(--sky-soft)" : "#fdeaed",
-                        color: percent >= 75 ? "var(--green)" : percent >= 50 ? "#1b45b8" : "var(--brand-dark)",
-                      }}
+                      className={`badge shrink-0 ${
+                        note20 >= 14 ? "badge-green" : note20 >= 10 ? "badge-blue" : "badge-brand"
+                      }`}
                     >
-                      {attempt.score}/{attempt.total} · {percent}%
+                      {note20.toFixed(1).replace(".", ",")}/20
                     </span>
                   </li>
                 );
@@ -272,7 +300,8 @@ export default async function EvaluationPage() {
           <p className="eyebrow">Mon profil</p>
           <h2 className="display text-lg font-semibold text-[var(--ink)]">Préférences d&apos;évaluation</h2>
           <p className="mt-1 text-xs text-[var(--ink-soft)]">
-            Le profil est de démonstration : change le prénom et la section pour adapter le tableau à ton programme.
+            Le profil est de démonstration : change le prénom et la section pour recalculer immédiatement tes
+            coefficients et ta probabilité de mention.
           </p>
           <form action={updateStudentProfile} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr]">
             <label className="block text-sm">
@@ -298,7 +327,7 @@ export default async function EvaluationPage() {
 
           <form action={resetStudentProgress} className="mt-4 border-t border-[var(--line)] pt-3">
             <button type="submit" className="text-xs font-semibold text-[var(--brand-dark)] underline">
-              Réinitialiser mes progrès (quiz, fiches, exercices, corrections)
+              Réinitialiser mes progrès (historique de scores, XP, fiches, exercices, corrections)
             </button>
           </form>
         </section>

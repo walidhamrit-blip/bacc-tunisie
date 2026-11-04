@@ -17,7 +17,12 @@ export const INIT_SQL_STATEMENTS: string[] = [
   "ALTER TABLE \"lessons\" ADD COLUMN IF NOT EXISTS \"sections\" jsonb DEFAULT '[]'::jsonb NOT NULL;",
   "CREATE TABLE IF NOT EXISTS \"quiz_attempts\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"student_id\" integer NOT NULL,\n\t\"quiz_slug\" text NOT NULL,\n\t\"subject_slug\" text NOT NULL,\n\t\"score\" integer NOT NULL,\n\t\"total\" integer NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
   "CREATE TABLE IF NOT EXISTS \"quizzes\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"slug\" text NOT NULL,\n\t\"subject_slug\" text NOT NULL,\n\t\"lesson_slug\" text,\n\t\"title\" text NOT NULL,\n\t\"description\" text NOT NULL,\n\t\"level\" text DEFAULT 'Bac' NOT NULL,\n\t\"duration_min\" integer DEFAULT 8 NOT NULL,\n\t\"questions\" jsonb DEFAULT '[]'::jsonb NOT NULL\n);",
-  "CREATE TABLE IF NOT EXISTS \"students\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"section\" text NOT NULL,\n\t\"is_demo\" boolean DEFAULT true NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+  "CREATE TABLE IF NOT EXISTS \"students\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"section\" text NOT NULL,\n\t\"is_demo\" boolean DEFAULT true NOT NULL,\n\t\"xp_points\" integer DEFAULT 0 NOT NULL,\n\t\"streak_days\" integer DEFAULT 0 NOT NULL,\n\t\"last_activity_at\" timestamp with time zone,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+  // Colonnes de gamification ajoutées sur `students` : rejouables sans perte sur base existante.
+  "ALTER TABLE \"students\" ADD COLUMN IF NOT EXISTS \"xp_points\" integer DEFAULT 0 NOT NULL;",
+  "ALTER TABLE \"students\" ADD COLUMN IF NOT EXISTS \"streak_days\" integer DEFAULT 0 NOT NULL;",
+  "ALTER TABLE \"students\" ADD COLUMN IF NOT EXISTS \"last_activity_at\" timestamp with time zone;",
+  "CREATE TABLE IF NOT EXISTS \"score_history\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"student_id\" integer NOT NULL,\n\t\"activity_type\" text DEFAULT 'quiz' NOT NULL,\n\t\"activity_slug\" text NOT NULL,\n\t\"activity_title\" text DEFAULT '' NOT NULL,\n\t\"subject_slug\" text NOT NULL,\n\t\"score\" integer NOT NULL,\n\t\"total\" integer NOT NULL,\n\t\"note_on_20_tenths\" integer DEFAULT 0 NOT NULL,\n\t\"xp_earned\" integer DEFAULT 0 NOT NULL,\n\t\"duration_sec\" integer DEFAULT 0 NOT NULL,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
   "CREATE TABLE IF NOT EXISTS \"subjects\" (\n\t\"id\" serial PRIMARY KEY NOT NULL,\n\t\"slug\" text NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"short_name\" text NOT NULL,\n\t\"family\" text NOT NULL,\n\t\"icon\" text NOT NULL,\n\t\"accent\" text NOT NULL,\n\t\"description\" text NOT NULL,\n\t\"sections\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"order_index\" integer DEFAULT 0 NOT NULL\n);",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"exam_progress_unique_idx\" ON \"exam_progress\" USING btree (\"student_id\",\"exam_slug\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"exams_slug_idx\" ON \"exams\" USING btree (\"slug\");",
@@ -27,4 +32,5 @@ export const INIT_SQL_STATEMENTS: string[] = [
   "CREATE UNIQUE INDEX IF NOT EXISTS \"lessons_slug_idx\" ON \"lessons\" USING btree (\"slug\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"quizzes_slug_idx\" ON \"quizzes\" USING btree (\"slug\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"subjects_slug_idx\" ON \"subjects\" USING btree (\"slug\");",
+  "CREATE INDEX IF NOT EXISTS \"score_history_student_created_idx\" ON \"score_history\" USING btree (\"student_id\",\"created_at\");",
 ];
