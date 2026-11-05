@@ -6,9 +6,12 @@ export default defineConfig([
   ...nextCoreWebVitals,
   globalIgnores([
     ".next/**",
+    ".open-next/**",
+    ".wrangler/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "cloudflare-env.d.ts",
     "public/sw.js",
     "public/workbox-*.js",
     "public/fallback-*.js",

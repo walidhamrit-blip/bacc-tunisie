@@ -17,15 +17,22 @@ import {
   quizzes,
   scoreHistory,
   students,
+  studyPlans,
   subjects,
 } from "@/db/schema";
 import { ensureSeeded } from "@/db/seed";
 import { calculateMentionProbability } from "@/lib/mention-probability";
+import { normalizeSection, type SectionName } from "@/lib/sections";
 import {
   DEVICE_TOKEN_COOKIE,
   STUDENT_CODE_COOKIE,
   isLockedStudent,
 } from "@/lib/student-session";
+import {
+  buildCurrentWeekLabel,
+  generateWeeklyStudyPlan,
+  type SubjectPlannerInput,
+} from "@/lib/study-planner";
 
 export type Student = typeof students.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
@@ -36,6 +43,7 @@ export type Quiz = typeof quizzes.$inferSelect;
 export type ScoreHistoryItem = typeof scoreHistory.$inferSelect;
 export type BacSimulation = typeof bacSimulations.$inferSelect;
 export type ErrorCardItem = typeof errorCards.$inferSelect;
+export type StudyPlanRecord = typeof studyPlans.$inferSelect;
 export type CommunitySheet = typeof communitySheets.$inferSelect;
 
 export type StudentSessionStatus =
@@ -411,6 +419,139 @@ export async function listErrorCards(): Promise<ErrorCardItem[]> {
     return rows.filter((row) => scope.allowedSubjectSlugs!.has(row.subjectSlug));
   }
   return rows;
+}
+
+/**
+ * Construit le catalogue enrichi des matières officielles d'une section
+ * (maîtrise réelle, cartes SRS dues, cours/exercices/quiz/examens restants)
+ * pour alimenter le Générateur de Planning Hebdomadaire Intelligent.
+ */
+export async function buildStudentSubjectsPlannerCatalog(
+  section: SectionName,
+): Promise<SubjectPlannerInput[]> {
+  await ensureSeeded();
+  const [dashboard, srsCards, sectionSubjects, allLessons, allExercises, allQuizzes, allExams] =
+    await Promise.all([
+      getDashboard(),
+      listErrorCards(),
+      listSubjects(section),
+      listLessonsForSection(section),
+      listExercises(),
+      listQuizzes(),
+      listExams(),
+    ]);
+
+  const [doneLessons, doneExercises, doneExams] = await Promise.all([
+    getStudentLessonSlugs(dashboard.student.id),
+    getStudentExerciseSlugs(dashboard.student.id),
+    getStudentExamSlugs(dashboard.student.id),
+  ]);
+
+  const masteryBySlug = new Map(
+    dashboard.subjectLevels.map((lvl) => [lvl.subject.slug, lvl.mastery]),
+  );
+
+  const nowMs = Date.now();
+  const dueSrsBySlug = new Map<string, number>();
+  for (const card of srsCards) {
+    if (card.nextReviewAt.getTime() <= nowMs && !card.mastered) {
+      dueSrsBySlug.set(
+        card.subjectSlug,
+        (dueSrsBySlug.get(card.subjectSlug) ?? 0) + 1,
+      );
+    }
+  }
+
+  return sectionSubjects.map((sub) => ({
+    slug: sub.slug,
+    name: sub.name,
+    icon: sub.icon,
+    accent: sub.accent,
+    mastery: masteryBySlug.get(sub.slug) ?? 0,
+    dueSrsCount: dueSrsBySlug.get(sub.slug) ?? 0,
+    lessons: allLessons
+      .filter((l) => l.subjectSlug === sub.slug)
+      .map((l) => ({ slug: l.slug, title: l.title, done: doneLessons.has(l.slug) })),
+    exercises: allExercises
+      .filter((e) => e.subjectSlug === sub.slug)
+      .map((e) => ({ slug: e.slug, title: e.title, done: doneExercises.has(e.slug) })),
+    quizzes: allQuizzes
+      .filter((q) => q.subjectSlug === sub.slug)
+      .map((q) => ({ slug: q.slug, title: q.title })),
+    exams: allExams
+      .filter((x) => x.subjectSlug === sub.slug)
+      .map((x) => ({ slug: x.slug, title: x.title, done: doneExams.has(x.slug) })),
+  }));
+}
+
+/**
+ * Récupère le planning hebdomadaire enregistré de l'élève courant (ou en génère un
+ * automatiquement sur sa section officielle s'il n'en possède pas encore).
+ */
+export async function getOrCreateStudyPlan(): Promise<StudyPlanRecord> {
+  await ensureSeeded();
+  const student = await getStudent();
+  const activeSection = normalizeSection(student.section);
+
+  const existingRows = await db
+    .select()
+    .from(studyPlans)
+    .where(eq(studyPlans.studentId, student.id))
+    .limit(1);
+
+  if (
+    existingRows.length > 0 &&
+    existingRows[0].section === activeSection &&
+    existingRows[0].slots.length > 0
+  ) {
+    return existingRows[0];
+  }
+
+  const dailyMinutesWeekday = existingRows[0]?.dailyMinutesWeekday ?? 90;
+  const dailyMinutesWeekend = existingRows[0]?.dailyMinutesWeekend ?? 180;
+  const preferredRhythm = existingRows[0]?.preferredRhythm ?? "equilibre";
+  const weekLabel = buildCurrentWeekLabel();
+
+  const subjectsCatalog = await buildStudentSubjectsPlannerCatalog(activeSection);
+  const slots = generateWeeklyStudyPlan({
+    section: activeSection,
+    dailyMinutesWeekday,
+    dailyMinutesWeekend,
+    preferredRhythm,
+    subjectsCatalog,
+  });
+
+  if (existingRows.length > 0) {
+    const [updated] = await db
+      .update(studyPlans)
+      .set({
+        section: activeSection,
+        weekLabel,
+        dailyMinutesWeekday,
+        dailyMinutesWeekend,
+        preferredRhythm,
+        slots,
+        updatedAt: new Date(),
+      })
+      .where(eq(studyPlans.id, existingRows[0].id))
+      .returning();
+    return updated;
+  }
+
+  const [created] = await db
+    .insert(studyPlans)
+    .values({
+      studentId: student.id,
+      section: activeSection,
+      weekLabel,
+      dailyMinutesWeekday,
+      dailyMinutesWeekend,
+      preferredRhythm,
+      slots,
+    })
+    .returning();
+
+  return created;
 }
 
 export async function getDashboard() {

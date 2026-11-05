@@ -1,114 +1,84 @@
-# Déploiement sur Vercel + base Neon
+# Déploiement sur Cloudflare Workers + Base PostgreSQL Neon (Recommandé)
 
-Guide pas à pas pour publier l'application Bac Coach Tunisie (Next.js 16 + PostgreSQL/Drizzle)
-sur **Vercel** avec une base **Neon**.
+> **Pourquoi GitHub Pages ne convient pas à Bac Coach Tunisie ?**
+> GitHub Pages n'héberge que des fichiers HTML/CSS/JS statiques : il ne peut exécuter ni les **Server Actions** (inscription mono-section, quiz, SRS, planning), ni les **API Routes** (`/api/corrections`, `/api/health`), ni les **cookies sécurisés** (`bac_student_code`), ni se connecter à une **base de données**.
+
+L'application est désormais **nativement configurée pour Cloudflare Workers** via `@opennextjs/cloudflare` (`wrangler.jsonc` + `open-next.config.ts`) et utilise le pilote **HTTP Serverless de Neon (`@neondatabase/serverless`)** dans `src/db/index.ts`.
 
 ---
 
-## 1. Créer la base de données Neon
+## 1. Quelle est la base de données appropriée avec Cloudflare ?
 
-1. Va sur [console.neon.tech](https://console.neon.tech) → **New Project**
-   - Nom : `bacc-tunisie`
-   - Région : `AWS eu-central-1` (Frankfurt) — la plus proche de la Tunisie
-   - Version Postgres : 17 (par défaut)
-2. Dans le tableau de bord du projet → **Connect** → onglet **Pooled connection**
-   - Coche « Connection pooling »
-   - Copie la chaîne, elle ressemble à :
-     ```
-     postgresql://neondb_owner:XXXX@ep-cool-name-123456-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
-     ```
-   - ⚠️ Utilise **l'URL pooled** (le host contient `-pooler`). L'URL directe sature les
-     connexions quand Vercel crée plusieurs instances de fonction.
+La base idéale est **Neon Serverless PostgreSQL** (plan gratuit généreux, région **AWS `eu-central-1` Frankfurt** très rapide depuis la Tunisie) :
+- **Zéro réécriture SQL** : nos 12 tables PostgreSQL (`jsonb`, `serial`, `timestamp with time zone`, Drizzle ORM) fonctionnent telles quelles.
+- **Pilote Edge HTTP (`@neondatabase/serverless`)** : chaque requête SQL transite en HTTPS (`fetch`) depuis l'Edge Cloudflare vers Neon sans socket TCP bloquant ni limite de connexions, **100 % compatible avec le plan gratuit Cloudflare Workers**.
+- **Auto-migration & auto-seed** : dès la première visite sur ton URL Cloudflare, l'application crée automatiquement les 12 tables et insère tout le programme officiel tunisien !
+- *(Option avancée supportée)* : si tu attaches un binding **Cloudflare Hyperdrive** nommé `HYPERDRIVE`, `src/db/index.ts` le détecte aussi automatiquement.
 
-## 2. Créer les tables dans Neon
+### Créer ta base Neon en 2 minutes
 
-**L'application crée elle-même ses tables au premier chargement** (`ensureSchema()` dans
-`src/db/seed.ts` exécute un schéma idempotent, `IF NOT EXISTS`). Tu peux donc déployer
-directement sur une base Neon vide : au premier hit, les 11 tables sont créées puis le
-contenu pédagogique (13 matières, 18 cours, exercices, examens, quiz) et l'élève de démo
-sont insérés.
+1. Ouvre [console.neon.tech](https://console.neon.tech) → **New Project** :
+   - **Project name** : `bacc-tunisie`
+   - **Region** : `AWS Europe (Frankfurt) — eu-central-1`
+2. Clique sur **Connect** → coche **Connection pooling** → copie l'URL qui ressemble à :
+   ```text
+   postgresql://neondb_owner:MOT_DE_PASSE@ep-xxxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+   ```
 
-Si tu préfères maîtriser la migration depuis ta machine :
+---
 
-### Option A — depuis ta machine (recommandé)
+## 2. Publier sur Cloudflare Workers (via GitHub automatique ou CLI)
 
-```bash
-cp .env.example .env.local
-# colle la chaîne Neon pooled dans DATABASE_URL, puis :
-npm install
-npm run db:push       # crée / met à jour les tables (drizzle-kit push)
-```
+### Option A — Déploiement automatique GitHub dans le Dashboard Cloudflare (Recommandé)
 
-### Option B — SQL direct
+1. Connecte-toi sur [dash.cloudflare.com](https://dash.cloudflare.com) → **Compute (Workers & Pages)** → sélectionne ton service **`bacc-tunisie`** (ou **Create** → **Import a repository** → `walidhamrit-blip/bacc-tunisie`).
+2. Dans **Settings → Builds** (Workers Builds), vérifie les commandes :
+   - **Build command** : *(laisser vide, car `wrangler.jsonc` exécute déjà automatiquement `npm run cf:build`)* — ou mettre `npx @opennextjs/cloudflare build` si tu préfères l'expliciter.
+   - **Deploy command** : `npx wrangler deploy`
+   - **Non-production branch deploy command** : `npx wrangler versions upload`
+3. Dans **Settings → Variables and Secrets** → clique sur **+ Add** :
+   - **Type** : `Secret` (ou `Text`)
+   - **Variable name** : `DATABASE_URL`
+   - **Value** : colle ta chaîne PostgreSQL **Neon** (`postgresql://...-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require`)
+   - *(Optionnel)* Ajoute `OPENAI_API_KEY` si tu veux enrichir la correction PDF par IA.
+4. Clique sur **Deploy** (ou pousse un commit sur `main`) !
+5. Désactive GitHub Pages dans ton dépôt GitHub (**Settings → Pages → Source : None**) pour éviter toute confusion.
 
-Ouvre la console SQL de Neon et colle le contenu de `drizzle/0000_init.sql` puis de
-`drizzle/0001_lessons_program_period.sql` (ajout des colonnes `period` et `sections` sur
-`lessons`).
-
-> Le contenu pédagogique (matières, cours, exercices, examens, quiz), le **programme officiel
-> des 7 filières** (trimestre de chaque chapitre, cf. `src/db/content/program.ts`) et l'élève
-> de démo sont insérés **automatiquement au premier chargement** de l'application
-> (`ensureSeeded()` dans `src/db/seed.ts`). Rien d'autre à faire.
-
-## 3. Déployer sur Vercel
-
-### Via l'intégration Neon (le plus simple)
-
-1. Sur [vercel.com/new](https://vercel.com/new), importe le dépôt GitHub `bacc-tunisie`.
-2. Framework détecté : **Next.js** (aucune commande de build à changer).
-3. Avant de cliquer sur *Deploy*, va dans **Storage → Neon** (ou *Integrations → Neon*),
-   connecte ton compte Neon et sélectionne le projet `bacc-tunisie`.
-   Vercel injecte alors automatiquement `DATABASE_URL` (et `POSTGRES_URL`, etc.).
-4. **Deploy**.
-
-### Manuellement
-
-Si tu préfères ne pas passer par l'intégration, ajoute la variable d'environnement à la main :
-
-| Clé | Valeur | Environnements |
-| --- | --- | --- |
-| `DATABASE_URL` | chaîne Neon **pooled** (`...-pooler...?sslmode=require`) | Production, Preview, Development |
-| `PG_POOL_MAX` | `3` (optionnel) | tous |
-| `OPENAI_API_KEY` | clé OpenAI (optionnel) | tous |
-
-Puis **Redeploy**, car Vercel n'applique pas les variables à un déploiement déjà construit.
-
-## 4. Vérifier que ça marche — et diagnostiquer
-
-Ouvre `https://<ton-projet>.vercel.app/api/health`. C'est un diagnostic complet :
-
-| Réponse | Signification | Solution |
-| --- | --- | --- |
-| `{"ok":true,"schema":"ready","content":{...}}` | Tout va bien | — |
-| `{"ok":false,"step":"env"}` | `DATABASE_URL` absente du déploiement | Ajouter la variable **puis Redeploy** |
-| `{"ok":false,"step":"connection"}` | URL Neon fausse / base injoignable | Utiliser l'URL *pooled* + `sslmode=require` |
-| `{"ok":false,"step":"schema"}` | Schéma non créable | Lancer `npm run db:push` avec la même URL |
-
-En cas d'erreur, les pages affichent désormais un écran explicite (avec bouton « Réessayer »
-et lien vers `/api/health`) au lieu de « This page couldn't load ».
-
-> ⚠️ **Cause n°1 du message « This page couldn't load » sur Vercel** : le projet a été déployé
-> sans `DATABASE_URL`. Ajouter la variable ne suffit pas — il faut **Redeploy**, car les
-> variables d'environnement sont figées au moment du build pour les fonctions déjà déployées.
-
-## 5. Points d'attention spécifiques à ce projet
-
-- **Taille des PDF** : Vercel limite le corps d'une requête à ~4,5 Mo. La limite du
-  formulaire de correction est donc fixée à **4 Mo** (`src/app/api/corrections/route.ts`).
-  Au-delà, l'utilisateur est invité à coller l'énoncé.
-- **Durée des fonctions** : la correction d'un PDF appelle éventuellement l'IA avec un
-  timeout de 25 s. Sur le plan Hobby, la durée max d'une fonction est de 60 s : c'est bon.
-- **Connexions** : le pool est créé de façon paresseuse (`src/db/index.ts`) avec `max: 3`
-  et SSL forcé pour Neon. Importer le module ne casse plus le `next build`.
-- **API OpenAI (optionnelle)** : sans `OPENAI_API_KEY`, la correction fonctionne avec le
-  guide pédagogique local (`analyzeSheet`). Avec la clé, elle est enrichie par `gpt-4o-mini`.
-
-## 6. Commandes utiles
+### Option B — Déploiement direct depuis ton terminal
 
 ```bash
-npm run db:push       # applique le schéma sur la base ciblée par DATABASE_URL
-npm run db:generate   # génère une migration après modification du schéma
-npm run db:studio     # explorateur de données Drizzle
-npm run typecheck
-npm run build
+# 1. Authentification Cloudflare (une seule fois)
+npx wrangler login
+
+# 2. Enregistrer le secret DATABASE_URL sur le Worker bacc-tunisie
+npx wrangler secret put DATABASE_URL
+# -> Colle ton URL Neon postgresql://...-pooler...?sslmode=require
+
+# 3. Compiler avec OpenNext et déployer sur Cloudflare Workers
+npm run cf:deploy
 ```
+
+---
+
+## 3. Vérifier ton déploiement Cloudflare
+
+Ouvre `https://bacc-tunisie.<ton-sous-domaine>.workers.dev/api/health` :
+
+```json
+{
+  "ok": true,
+  "database": "neon-serverless-http",
+  "schema": "ready",
+  "content": { "subjects": 13, "lessons": 19 }
+}
+```
+
+- Si `"step": "env"` apparaît : ajoute `DATABASE_URL` dans **Cloudflare > bacc-tunisie > Settings > Variables and Secrets**, puis relance un déploiement.
+
+---
+
+## 4. Compatibilité conservée avec Vercel + Développement local
+
+La même base de code reste **100 % compatible avec Vercel** (`npm run build`) et avec une base PostgreSQL locale (`npm run dev`) :
+- Si `DATABASE_URL` contient `neon.tech`, `src/db/index.ts` utilise automatiquement `@neondatabase/serverless` (`neon-http`).
+- Sinon (PostgreSQL local `127.0.0.1`, Docker ou Supabase), `src/db/index.ts` bascule automatiquement sur le pool `node-postgres` (`pg`).
