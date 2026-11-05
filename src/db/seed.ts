@@ -2,6 +2,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   communitySheets,
+  errorCards,
   examProgress,
   exams,
   exerciseProgress,
@@ -15,13 +16,14 @@ import {
   subjects,
 } from "@/db/schema";
 import { communitySheetsSeed } from "@/db/content/community-sheets";
-import { subjectSeeds } from "@/db/content/subjects";
+import { examsSeed } from "@/db/content/exams";
+import { exercisesSeed } from "@/db/content/exercises";
 import { lessonsSeed } from "@/db/content/lessons-humanities";
 import { lessonProgramMeta } from "@/db/content/program";
-import { exercisesSeed } from "@/db/content/exercises";
-import { examsSeed } from "@/db/content/exams";
 import { quizzesSeed } from "@/db/content/quizzes";
+import { subjectSeeds } from "@/db/content/subjects";
 import { INIT_SQL_STATEMENTS } from "@/db/init-sql";
+import { buildErrorCardFingerprint } from "@/lib/srs-engine";
 
 const DEMO_NAME = "Yassine Ben Salah";
 const DEMO_SECTION = "Sciences expérimentales";
@@ -37,7 +39,12 @@ async function chunkedInsert<T>(rows: T[], size: number, insert: (batch: T[]) =>
 }
 
 async function countRows(
-  table: typeof subjects | typeof lessons | typeof quizzes | typeof communitySheets,
+  table:
+    | typeof subjects
+    | typeof lessons
+    | typeof quizzes
+    | typeof communitySheets
+    | typeof errorCards,
 ) {
   const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(table);
   return row?.count ?? 0;
@@ -314,6 +321,129 @@ async function doSeed() {
       4,
       (batch) => db.insert(communitySheets).values(batch).onConflictDoNothing(),
     );
+  }
+
+  // Initialisation idempotente du Carnet d'Erreurs SRS de démonstration
+  const errorCardsCount = await countRows(errorCards);
+  if (errorCardsCount === 0) {
+    const now = Date.now();
+    const pastHour = new Date(now - 2 * 60 * 60 * 1000);
+    const inThreeDays = new Date(now + 3 * 24 * 60 * 60 * 1000);
+    const inTwelveDays = new Date(now + 12 * 24 * 60 * 60 * 1000);
+
+    const demoErrorSeeds = [
+      {
+        subjectSlug: "physique",
+        sourceType: "quiz" as const,
+        sourceSlug: "quiz-physique-rc",
+        sourceTitle: "Quiz · Le dipôle RC",
+        prompt:
+          "Lors de la charge d'un condensateur à travers une résistance R sous un échelon E, quelle est l'expression de la tension uC(t) ?",
+        wrongAnswer: "uC(t) = E · exp(-t / RC)",
+        correctAnswer: "uC(t) = E · (1 - exp(-t / τ)) avec τ = R · C",
+        explanation:
+          "Ne confonds jamais charge et décharge : à t = 0, le condensateur initialement déchargé vérifie uC(0) = 0 V, puis tend vers E quand t → +∞.",
+        errorCategory: "formule" as const,
+        boxLevel: 1,
+        easeFactorPermille: 2350,
+        intervalDays: 0,
+        repetitions: 0,
+        lapsesCount: 2,
+        mastered: false,
+        nextReviewAt: pastHour,
+      },
+      {
+        subjectSlug: "svt",
+        sourceType: "quiz" as const,
+        sourceSlug: "quiz-svt-genetique",
+        sourceTitle: "Quiz · Génétique et brassage",
+        prompt:
+          "Dans un test-cross de dihybridisme avec deux gènes liés à distance d (en centimorgans), que représentent les phénotypes recombinés ?",
+        wrongAnswer: "Ils sont majoritaires (50 % chacun) comme pour deux gènes indépendants.",
+        correctAnswer:
+          "Ils sont minoritaires (< 50 % au total) et leur fréquence globale vaut p = d / 100.",
+        explanation:
+          "En cas de liaison génétique partielle, les gamètes parentaux restent toujours majoritaires (> 50 %) et les recombinés issus du crossing-over sont minoritaires.",
+        errorCategory: "comprehension" as const,
+        boxLevel: 1,
+        easeFactorPermille: 2500,
+        intervalDays: 0,
+        repetitions: 0,
+        lapsesCount: 2,
+        mastered: false,
+        nextReviewAt: pastHour,
+      },
+      {
+        subjectSlug: "mathematiques",
+        sourceType: "manuel" as const,
+        sourceSlug: "ds1-suites",
+        sourceTitle: "Devoir de synthèse N°1 · Suites réelles",
+        prompt:
+          "Pour prouver qu'une suite croissante (un) converge, suffit-il de montrer que un+1 - un ≥ 0 pour tout n ?",
+        wrongAnswer: "Oui, toute suite croissante converge vers une limite finie.",
+        correctAnswer:
+          "Non : il faut montrer qu'elle est croissante ET majorée (théorème de la convergence monotone).",
+        explanation:
+          "Une suite croissante non majorée diverge vers +∞. Toujours citer explicitement le majorant avant de conclure à la convergence.",
+        errorCategory: "methode" as const,
+        boxLevel: 2,
+        easeFactorPermille: 2500,
+        intervalDays: 1,
+        repetitions: 1,
+        lapsesCount: 1,
+        mastered: false,
+        nextReviewAt: pastHour,
+      },
+      {
+        subjectSlug: "philosophie",
+        sourceType: "quiz" as const,
+        sourceSlug: "quiz-philo-liberte",
+        sourceTitle: "Quiz · La liberté",
+        prompt:
+          "Quelle distinction conceptuelle essentielle sépare le libre-arbitre du simple désir immédiat (caprice) ?",
+        wrongAnswer: "Être libre, c'est agir sans aucune règle ni réflexion préalable.",
+        correctAnswer:
+          "L'autonomie (Rousseau, Kant) consiste à obéir à une loi rationnelle qu'on s'est soi-même prescrite, et non à ses impulsions.",
+        explanation:
+          "Dans l'introduction d'une dissertation sur la liberté, oppose l'indépendance apparente du caprice (servitude aux passions) à l'autonomie rationnelle.",
+        errorCategory: "comprehension" as const,
+        boxLevel: 3,
+        easeFactorPermille: 2500,
+        intervalDays: 3,
+        repetitions: 2,
+        lapsesCount: 1,
+        mastered: false,
+        nextReviewAt: inThreeDays,
+      },
+      {
+        subjectSlug: "informatique",
+        sourceType: "quiz" as const,
+        sourceSlug: "quiz-info-python",
+        sourceTitle: "Quiz · Algorithmique & Python",
+        prompt:
+          "En Python, combien d'itérations exécute la boucle `for i in range(1, n):` ?",
+        wrongAnswer: "n itérations (de 1 jusqu'à n inclus).",
+        correctAnswer: "n - 1 itérations (de 1 jusqu'à n - 1 inclus ; la borne de fin est exclue).",
+        explanation:
+          "Pour parcourir de 1 jusqu'à n inclus en Python, il faut impérativement écrire `range(1, n + 1)`.",
+        errorCategory: "calcul" as const,
+        boxLevel: 4,
+        easeFactorPermille: 2650,
+        intervalDays: 12,
+        repetitions: 3,
+        lapsesCount: 1,
+        mastered: false,
+        nextReviewAt: inTwelveDays,
+      },
+    ];
+
+    await db.insert(errorCards).values(
+      demoErrorSeeds.map((item) => ({
+        studentId: activeStudentId,
+        fingerprint: buildErrorCardFingerprint(item.subjectSlug, item.prompt),
+        ...item,
+      })),
+    ).onConflictDoNothing();
   }
 }
 

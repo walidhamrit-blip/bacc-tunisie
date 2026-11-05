@@ -9,6 +9,7 @@ import {
   communitySheetLikes,
   communitySheets,
   corrections,
+  errorCards,
   examProgress,
   exerciseProgress,
   lessonProgress,
@@ -30,6 +31,13 @@ import {
 } from "@/lib/community-validation";
 import { getStudent, getStudentSessionInfo, type Student } from "@/lib/data";
 import { normalizeSection } from "@/lib/sections";
+import {
+  buildErrorCardFingerprint,
+  computeNextSrsState,
+  isValidErrorCategory,
+  type ErrorCategory,
+  type SrsRating,
+} from "@/lib/srs-engine";
 import {
   DEVICE_TOKEN_COOKIE,
   MAX_PERSONAL_DEVICES,
@@ -59,6 +67,20 @@ export type SaveSimulationState = {
   errors: string[];
   message: string;
   savedAt?: number;
+};
+
+export type ManualErrorCardState = {
+  ok: boolean;
+  errors: string[];
+  message: string;
+  createdAt?: number;
+};
+
+export type QuizMistakePayload = {
+  prompt: string;
+  wrongAnswer: string;
+  correctAnswer: string;
+  explanation: string;
 };
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -103,6 +125,75 @@ function computeQuizXp(score: number, total: number, isBacBlanc: boolean): numbe
   const accuracyBonus = Math.round(ratio * (isBacBlanc ? 35 : 25));
   const perfectBonus = score === safeTotal ? 10 : 0;
   return base + accuracyBonus + perfectBonus;
+}
+
+async function upsertStudentErrorCard(params: {
+  studentId: number;
+  subjectSlug: string;
+  sourceType: "quiz" | "bac-blanc" | "manuel";
+  sourceSlug: string;
+  sourceTitle: string;
+  prompt: string;
+  wrongAnswer: string;
+  correctAnswer: string;
+  explanation: string;
+  errorCategory: ErrorCategory;
+}) {
+  const fingerprint = buildErrorCardFingerprint(params.subjectSlug, params.prompt);
+  const existing = await db
+    .select()
+    .from(errorCards)
+    .where(
+      and(
+        eq(errorCards.studentId, params.studentId),
+        eq(errorCards.fingerprint, fingerprint),
+      ),
+    )
+    .limit(1);
+
+  const now = new Date();
+
+  if (existing.length > 0) {
+    const row = existing[0];
+    await db
+      .update(errorCards)
+      .set({
+        wrongAnswer: params.wrongAnswer || row.wrongAnswer,
+        correctAnswer: params.correctAnswer || row.correctAnswer,
+        explanation: params.explanation || row.explanation,
+        errorCategory: params.errorCategory,
+        boxLevel: 1,
+        easeFactorPermille: Math.max(1300, (row.easeFactorPermille ?? 2500) - 150),
+        intervalDays: 0,
+        repetitions: 0,
+        lapsesCount: (row.lapsesCount ?? 1) + 1,
+        mastered: false,
+        nextReviewAt: now,
+      })
+      .where(eq(errorCards.id, row.id));
+    return;
+  }
+
+  await db.insert(errorCards).values({
+    studentId: params.studentId,
+    fingerprint,
+    subjectSlug: params.subjectSlug,
+    sourceType: params.sourceType,
+    sourceSlug: params.sourceSlug,
+    sourceTitle: params.sourceTitle,
+    prompt: params.prompt,
+    wrongAnswer: params.wrongAnswer,
+    correctAnswer: params.correctAnswer,
+    explanation: params.explanation,
+    errorCategory: params.errorCategory,
+    boxLevel: 1,
+    easeFactorPermille: 2500,
+    intervalDays: 0,
+    repetitions: 0,
+    lapsesCount: 1,
+    mastered: false,
+    nextReviewAt: now,
+  });
 }
 
 /**
@@ -373,6 +464,7 @@ export async function recordQuizAttempt(
   score: number,
   total: number,
   durationSec = 0,
+  mistakes: QuizMistakePayload[] = [],
 ) {
   if (!quizSlug || !subjectSlug || total <= 0) return;
   const safeTotal = Math.max(1, Math.min(total, 60));
@@ -380,6 +472,16 @@ export async function recordQuizAttempt(
   const safeDuration = Math.max(0, Math.min(Math.round(durationSec), 7200));
 
   const student = await getStudent();
+  const [sub] = await db
+    .select({ name: subjects.name, sections: subjects.sections })
+    .from(subjects)
+    .where(eq(subjects.slug, subjectSlug))
+    .limit(1);
+
+  // Protection mono-section côté serveur
+  if (isLockedStudent(student) && sub && !sub.sections.includes(student.section)) {
+    return;
+  }
 
   await db.insert(quizAttempts).values({
     studentId: student.id,
@@ -393,11 +495,6 @@ export async function recordQuizAttempt(
   let activityTitle = quizSlug;
 
   if (isBacBlanc) {
-    const [sub] = await db
-      .select({ name: subjects.name })
-      .from(subjects)
-      .where(eq(subjects.slug, subjectSlug))
-      .limit(1);
     activityTitle = `Bac Blanc · ${sub?.name ?? subjectSlug}`;
   } else {
     const [quizRow] = await db
@@ -426,12 +523,199 @@ export async function recordQuizAttempt(
     durationSec: safeDuration,
   });
 
+  // Alimentation automatique du Carnet d'Erreurs SRS pour chaque mauvaise réponse
+  if (Array.isArray(mistakes) && mistakes.length > 0) {
+    for (const item of mistakes.slice(0, 20)) {
+      const prompt = String(item.prompt ?? "").trim().slice(0, 500);
+      const correctAnswer = String(item.correctAnswer ?? "").trim().slice(0, 400);
+      if (!prompt || !correctAnswer) continue;
+
+      await upsertStudentErrorCard({
+        studentId: student.id,
+        subjectSlug,
+        sourceType: isBacBlanc ? "bac-blanc" : "quiz",
+        sourceSlug: quizSlug,
+        sourceTitle: activityTitle,
+        prompt,
+        wrongAnswer: String(item.wrongAnswer ?? "").trim().slice(0, 400),
+        correctAnswer,
+        explanation: String(item.explanation ?? "").trim().slice(0, 600),
+        errorCategory: "comprehension",
+      });
+    }
+  }
+
   await awardStudentXp(student, xpEarned);
 
   revalidatePath("/");
   revalidatePath("/evaluation");
   revalidatePath("/quiz");
   revalidatePath("/bac-blanc");
+  revalidatePath("/carnet-erreurs");
+}
+
+/**
+ * Évalue une carte du Carnet d'Erreurs selon l'algorithme SRS (SM-2 + Boîtes de Leitner 1..5).
+ */
+export async function reviewErrorCard(
+  cardId: number,
+  rating: SrsRating,
+): Promise<{
+  ok: boolean;
+  xpEarned: number;
+  boxLevel: number;
+  intervalDays: number;
+  lapsesCount: number;
+  mastered: boolean;
+  nextReviewAtIso: string;
+  intervalLabel: string;
+} | null> {
+  if (!Number.isInteger(cardId) || cardId <= 0) return null;
+  if (!["again", "hard", "good", "easy"].includes(rating)) return null;
+
+  const student = await getStudent();
+  const rows = await db
+    .select()
+    .from(errorCards)
+    .where(and(eq(errorCards.id, cardId), eq(errorCards.studentId, student.id)))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const card = rows[0];
+
+  const now = new Date();
+  const next = computeNextSrsState(card, rating, now);
+
+  await db
+    .update(errorCards)
+    .set({
+      boxLevel: next.boxLevel,
+      easeFactorPermille: next.easeFactorPermille,
+      intervalDays: next.intervalDays,
+      repetitions: next.repetitions,
+      lapsesCount: next.lapsesCount,
+      mastered: next.mastered,
+      lastReviewedAt: now,
+      nextReviewAt: next.nextReviewAt,
+    })
+    .where(eq(errorCards.id, card.id));
+
+  await awardStudentXp(student, next.xpEarned);
+
+  revalidatePath("/carnet-erreurs");
+  revalidatePath("/evaluation");
+
+  return {
+    ok: true,
+    xpEarned: next.xpEarned,
+    boxLevel: next.boxLevel,
+    intervalDays: next.intervalDays,
+    lapsesCount: next.lapsesCount,
+    mastered: next.mastered,
+    nextReviewAtIso: next.nextReviewAt.toISOString(),
+    intervalLabel: next.intervalLabel,
+  };
+}
+
+/**
+ * Ajout manuel d'une erreur commise lors d'un devoir surveillé, d'une série ou d'une annale,
+ * strictement restreint aux matières officielles de la section verrouillée de l'élève.
+ */
+export async function addManualErrorCard(
+  _prevState: ManualErrorCardState,
+  formData: FormData,
+): Promise<ManualErrorCardState> {
+  const student = await getStudent();
+  const subjectSlug = String(formData.get("subjectSlug") ?? "").trim();
+  const rawCategory = String(formData.get("errorCategory") ?? "methode").trim();
+  const sourceTitle =
+    String(formData.get("sourceTitle") ?? "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 90) || "Devoir / Série d'exercices";
+  const prompt = String(formData.get("prompt") ?? "").trim().slice(0, 500);
+  const wrongAnswer = String(formData.get("wrongAnswer") ?? "").trim().slice(0, 400);
+  const correctAnswer = String(formData.get("correctAnswer") ?? "").trim().slice(0, 400);
+  const explanation = String(formData.get("explanation") ?? "").trim().slice(0, 600);
+
+  const errors: string[] = [];
+
+  if (!subjectSlug) {
+    errors.push("Choisis la matière concernée par cette erreur.");
+  }
+  if (prompt.length < 8) {
+    errors.push("Décris la question ou le piège rencontré (au moins 8 caractères).");
+  }
+  if (correctAnswer.length < 3) {
+    errors.push("Indique la correction exacte ou la formule juste à retenir.");
+  }
+
+  const [subRow] = subjectSlug
+    ? await db
+        .select({ slug: subjects.slug, name: subjects.name, sections: subjects.sections })
+        .from(subjects)
+        .where(eq(subjects.slug, subjectSlug))
+        .limit(1)
+    : [];
+
+  if (!subRow) {
+    errors.push("La matière sélectionnée est introuvable.");
+  } else if (isLockedStudent(student) && !subRow.sections.includes(student.section)) {
+    errors.push(
+      `Ton abonnement individuel est verrouillé sur la section « ${student.section} » : cette matière n'en fait pas partie.`,
+    );
+  }
+
+  if (errors.length > 0) {
+    return { ok: false, errors, message: "" };
+  }
+
+  const errorCategory: ErrorCategory = isValidErrorCategory(rawCategory)
+    ? rawCategory
+    : "methode";
+
+  const [{ count: manualCount }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(errorCards)
+    .where(and(eq(errorCards.studentId, student.id), eq(errorCards.sourceType, "manuel")));
+
+  const xpEarned = manualCount < 10 ? 15 : 5;
+
+  await upsertStudentErrorCard({
+    studentId: student.id,
+    subjectSlug,
+    sourceType: "manuel",
+    sourceSlug: `manuel-${Date.now()}`,
+    sourceTitle,
+    prompt,
+    wrongAnswer,
+    correctAnswer,
+    explanation,
+    errorCategory,
+  });
+
+  await awardStudentXp(student, xpEarned);
+
+  revalidatePath("/carnet-erreurs");
+  revalidatePath("/evaluation");
+
+  return {
+    ok: true,
+    errors: [],
+    message: `Fiche d'erreur ajoutée au planificateur SRS (+${xpEarned} XP) ! Elle est prête dans ta session du jour.`,
+    createdAt: Date.now(),
+  };
+}
+
+export async function deleteErrorCard(cardId: number) {
+  if (!Number.isInteger(cardId) || cardId <= 0) return;
+
+  const student = await getStudent();
+  await db
+    .delete(errorCards)
+    .where(and(eq(errorCards.id, cardId), eq(errorCards.studentId, student.id)));
+
+  revalidatePath("/carnet-erreurs");
 }
 
 /**
@@ -779,7 +1063,7 @@ export async function toggleCommunitySheetLike(sheetId: number): Promise<{
       .set({
         likesCount: sql`${communitySheets.likesCount} + 1`,
       })
-      .where(eq(communitySheets.id, sheetId))
+      .where(eq(communitySheets.id, sheetId));
     liked = true;
   }
 
@@ -832,6 +1116,7 @@ export async function resetStudentProgress() {
   await db.delete(quizAttempts).where(eq(quizAttempts.studentId, student.id));
   await db.delete(scoreHistory).where(eq(scoreHistory.studentId, student.id));
   await db.delete(bacSimulations).where(eq(bacSimulations.studentId, student.id));
+  await db.delete(errorCards).where(eq(errorCards.studentId, student.id));
   await db.delete(corrections).where(eq(corrections.studentId, student.id));
   await db
     .update(students)
