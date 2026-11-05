@@ -11,12 +11,13 @@ const NAV = [
   { href: "/communaute", label: "Communauté" },
   { href: "/flashcards", label: "Flashcards" },
   { href: "/carnet-erreurs", label: "Carnet SRS" },
+  { href: "/planning", label: "Planning" },
   { href: "/exercices", label: "Exercices" },
   { href: "/examens", label: "Examens" },
   { href: "/bac-blanc", label: "Bac Blanc" },
   { href: "/quiz", label: "Quiz" },
   { href: "/calculateur", label: "Calculateur FG" },
-  { href: "/organisation", label: "Organisation" },
+  { href: "/organisation", label: "Pomodoro" },
   { href: "/correction", label: "Corriger PDF" },
 ];
 
@@ -48,7 +49,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.72rem] font-semibold transition ${
+              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.7rem] font-semibold transition ${
                 isActive(item.href)
                   ? "bg-[var(--ink)] text-[var(--cream)]"
                   : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"

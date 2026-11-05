@@ -9,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { StudyPlanRhythm, StudyPlanSlot } from "@/lib/study-planner";
 
 export type LessonBlock =
   | { type: "paragraph"; title?: string; text: string }
@@ -329,6 +330,30 @@ export const errorCards = pgTable(
     uniqueIndex("error_cards_student_fingerprint_idx").on(table.studentId, table.fingerprint),
     index("error_cards_student_due_idx").on(table.studentId, table.nextReviewAt),
   ],
+);
+
+/**
+ * Planning hebdomadaire intelligent de révision (7 jours), personnalisé par élève
+ * et strictement aligné sur sa section officielle du Bac.
+ */
+export const studyPlans = pgTable(
+  "study_plans",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id").notNull(),
+    section: text("section").notNull(),
+    weekLabel: text("week_label").notNull().default(""),
+    dailyMinutesWeekday: integer("daily_minutes_weekday").notNull().default(90),
+    dailyMinutesWeekend: integer("daily_minutes_weekend").notNull().default(180),
+    preferredRhythm: text("preferred_rhythm")
+      .$type<StudyPlanRhythm>()
+      .notNull()
+      .default("equilibre"),
+    slots: jsonb("slots").$type<StudyPlanSlot[]>().notNull().default([]),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("study_plans_student_unique_idx").on(table.studentId)],
 );
 
 /**

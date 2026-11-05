@@ -8,7 +8,7 @@ export function SiteFooter() {
           <p className="display text-xl font-semibold text-[var(--ink)]">Bac Coach Tunisie</p>
           <p className="mt-3 max-w-sm text-sm text-[var(--ink-soft)]">
             Un accompagnement pédagogique pour les élèves de baccalauréat : fiches de cours, séries et examens
-            corrigés, quiz, répétition espacée (SRS), simulateur officiel de moyenne &amp; score FG, et évaluation de niveau.
+            corrigés, quiz, répétition espacée (SRS), planning hebdomadaire adaptatif, et simulateur officiel FG.
           </p>
           <p className="mt-4 text-xs text-[var(--ink-soft)]">
             Programme officiel tunisien · Abonnement individuel dédié à une seule section par inscription.
@@ -27,9 +27,10 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <p className="eyebrow mb-3">S&apos;entraîner &amp; Orientation</p>
+          <p className="eyebrow mb-3">Organisation &amp; Orientation</p>
           <ul className="space-y-2 text-sm text-[var(--ink-soft)]">
             <li><Link className="hover:text-[var(--brand)]" href="/mon-compte">Mon compte &amp; Code Élève (1 section)</Link></li>
+            <li><Link className="hover:text-[var(--brand)]" href="/planning">Planning hebdomadaire intelligent</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/calculateur">Calculateur Moyenne Bac &amp; Score FG</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/organisation">Pomodoro &amp; Compte à rebours J-J</Link></li>
             <li><Link className="hover:text-[var(--brand)]" href="/bac-blanc">Simulateur Bac Blanc (chrono)</Link></li>

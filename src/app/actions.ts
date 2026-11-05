@@ -17,6 +17,7 @@ import {
   quizzes,
   scoreHistory,
   students,
+  studyPlans,
   subjects,
 } from "@/db/schema";
 import {
@@ -29,7 +30,12 @@ import {
   buildCommunitySheetSlug,
   validateCommunitySheetInput,
 } from "@/lib/community-validation";
-import { getStudent, getStudentSessionInfo, type Student } from "@/lib/data";
+import {
+  buildStudentSubjectsPlannerCatalog,
+  getStudent,
+  getStudentSessionInfo,
+  type Student,
+} from "@/lib/data";
 import { normalizeSection } from "@/lib/sections";
 import {
   buildErrorCardFingerprint,
@@ -47,6 +53,15 @@ import {
   normalizeSyncCode,
   validateRegistrationInput,
 } from "@/lib/student-session";
+import {
+  buildCurrentWeekLabel,
+  clampPlanMinutes,
+  computeStudyPlanSummary,
+  formatMinutesAsHours,
+  generateWeeklyStudyPlan,
+  isValidStudyRhythm,
+  type StudyPlanRhythm,
+} from "@/lib/study-planner";
 
 export type CommunitySubmissionState = {
   ok: boolean;
@@ -74,6 +89,13 @@ export type ManualErrorCardState = {
   errors: string[];
   message: string;
   createdAt?: number;
+};
+
+export type StudyPlanActionState = {
+  ok: boolean;
+  errors: string[];
+  message: string;
+  generatedAt?: number;
 };
 
 export type QuizMistakePayload = {
@@ -719,6 +741,152 @@ export async function deleteErrorCard(cardId: number) {
 }
 
 /**
+ * Régénère et sauvegarde le Planning Hebdomadaire Intelligent sur 7 jours.
+ * Impose strictement `student.section` côté serveur lorsque l'abonnement de l'élève est verrouillé.
+ */
+export async function generateStudentStudyPlan(
+  _prevState: StudyPlanActionState,
+  formData: FormData,
+): Promise<StudyPlanActionState> {
+  const student = await getStudent();
+  const effectiveSection = isLockedStudent(student)
+    ? normalizeSection(student.section)
+    : normalizeSection(String(formData.get("section") ?? student.section));
+
+  const dailyMinutesWeekday = clampPlanMinutes(
+    Number.parseInt(String(formData.get("dailyMinutesWeekday") ?? "90"), 10),
+    90,
+    45,
+    240,
+  );
+  const dailyMinutesWeekend = clampPlanMinutes(
+    Number.parseInt(String(formData.get("dailyMinutesWeekend") ?? "180"), 10),
+    180,
+    60,
+    360,
+  );
+  const rawRhythm = String(formData.get("preferredRhythm") ?? "equilibre").trim();
+  const preferredRhythm: StudyPlanRhythm = isValidStudyRhythm(rawRhythm)
+    ? rawRhythm
+    : "equilibre";
+
+  const subjectsCatalog = await buildStudentSubjectsPlannerCatalog(effectiveSection);
+  const slots = generateWeeklyStudyPlan({
+    section: effectiveSection,
+    dailyMinutesWeekday,
+    dailyMinutesWeekend,
+    preferredRhythm,
+    subjectsCatalog,
+  });
+
+  const weekLabel = buildCurrentWeekLabel();
+
+  const existing = await db
+    .select({ id: studyPlans.id })
+    .from(studyPlans)
+    .where(eq(studyPlans.studentId, student.id))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(studyPlans)
+      .set({
+        section: effectiveSection,
+        weekLabel,
+        dailyMinutesWeekday,
+        dailyMinutesWeekend,
+        preferredRhythm,
+        slots,
+        updatedAt: new Date(),
+      })
+      .where(eq(studyPlans.id, existing[0].id));
+  } else {
+    await db.insert(studyPlans).values({
+      studentId: student.id,
+      section: effectiveSection,
+      weekLabel,
+      dailyMinutesWeekday,
+      dailyMinutesWeekend,
+      preferredRhythm,
+      slots,
+    });
+  }
+
+  await awardStudentXp(student, 10);
+
+  revalidatePath("/planning");
+  revalidatePath("/organisation");
+  revalidatePath("/evaluation");
+
+  const totalWeeklyMin = dailyMinutesWeekday * 5 + dailyMinutesWeekend * 2;
+
+  return {
+    ok: true,
+    errors: [],
+    message: `Nouveau planning hebdomadaire généré (+10 XP) pour la section « ${effectiveSection} » (${formatMinutesAsHours(totalWeeklyMin)} sur 7 jours, ${slots.length} créneaux ciblés).`,
+    generatedAt: Date.now(),
+  };
+}
+
+/**
+ * Coche ou décoche un créneau du planning hebdomadaire de l'élève (+10 XP par créneau validé).
+ */
+export async function toggleStudyPlanSlot(slotId: string): Promise<{
+  ok: boolean;
+  completed: boolean;
+  completionPct: number;
+  xpDelta: number;
+} | null> {
+  const cleanId = String(slotId ?? "").trim();
+  if (!cleanId) return null;
+
+  const student = await getStudent();
+  const rows = await db
+    .select()
+    .from(studyPlans)
+    .where(eq(studyPlans.studentId, student.id))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const plan = rows[0];
+
+  let targetCompleted = false;
+  let found = false;
+
+  const updatedSlots = plan.slots.map((slot) => {
+    if (slot.id !== cleanId) return slot;
+    found = true;
+    targetCompleted = !slot.completed;
+    return { ...slot, completed: targetCompleted };
+  });
+
+  if (!found) return null;
+
+  await db
+    .update(studyPlans)
+    .set({
+      slots: updatedSlots,
+      updatedAt: new Date(),
+    })
+    .where(eq(studyPlans.id, plan.id));
+
+  const xpDelta = targetCompleted ? 10 : -10;
+  await awardStudentXp(student, xpDelta);
+
+  const summary = computeStudyPlanSummary(updatedSlots);
+
+  revalidatePath("/planning");
+  revalidatePath("/evaluation");
+
+  return {
+    ok: true,
+    completed: targetCompleted,
+    completionPct: summary.completionPct,
+    xpDelta,
+  };
+}
+
+/**
  * Permet à l'élève d'enregistrer une note réelle de lycée (Devoir de contrôle / synthèse sur 20)
  * dans `score_history` afin d'affiner le calcul de sa Probabilité de Mention.
  */
@@ -1117,6 +1285,7 @@ export async function resetStudentProgress() {
   await db.delete(scoreHistory).where(eq(scoreHistory.studentId, student.id));
   await db.delete(bacSimulations).where(eq(bacSimulations.studentId, student.id));
   await db.delete(errorCards).where(eq(errorCards.studentId, student.id));
+  await db.delete(studyPlans).where(eq(studyPlans.studentId, student.id));
   await db.delete(corrections).where(eq(corrections.studentId, student.id));
   await db
     .update(students)

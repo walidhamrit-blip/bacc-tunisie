@@ -34,10 +34,13 @@ export default async function OrganisationPage() {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/planning" className="btn btn-primary btn-sm">
+              📅 Mon Planning 7 jours →
+            </Link>
             <Link href="/flashcards" className="btn btn-ghost btn-sm">
               Flashcards (5 min)
             </Link>
-            <Link href="/bac-blanc" className="btn btn-primary btn-sm">
+            <Link href="/bac-blanc" className="btn btn-ghost btn-sm">
               Bac Blanc chronométré
             </Link>
           </div>
@@ -84,11 +87,10 @@ export default async function OrganisationPage() {
             Vérifier la mémorisation
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-soft)]">
-            Termine ta séance du soir par une série de Flashcards ou un mini Bac Blanc chronométré pour valider ce qui
-            est acquis et repérer les points à revoir demain.
+            Termine ta séance du soir par une série de Flashcards, ton Carnet SRS ou un mini Bac Blanc chronométré pour valider tes acquis.
           </p>
-          <Link href="/flashcards" className="mt-3 inline-block text-xs font-semibold text-[var(--brand)]">
-            Réviser avec les Flashcards →
+          <Link href="/carnet-erreurs" className="mt-3 inline-block text-xs font-semibold text-[var(--brand)]">
+            Réviser mon Carnet SRS →
           </Link>
         </div>
       </section>
