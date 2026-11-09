@@ -76,14 +76,10 @@ export default async function LessonsPage({
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Cours pédagogiques"
-        title="Les fiches de cours, matière par matière"
+        eyebrow="Apprendre"
+        title="Fiches de cours"
         description={
-          <p>
-            Chaque fiche contient les objectifs, les notions expliquées simplement, les formules utiles, les erreurs
-            fréquentes et des cartes de révision. Chaque fiche est rattachée à sa filière et à son trimestre du
-            programme officiel tunisien : filtre pour ne voir que ce qui est évalué à ton prochain devoir de synthèse.
-          </p>
+          <p>Des fiches claires par matière, rattachées à ta filière et au trimestre du programme officiel.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -95,7 +91,7 @@ export default async function LessonsPage({
         }
       />
 
-      <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
         <Link href="/cours" className={`chip whitespace-nowrap ${!activeSubject ? "chip-active" : ""}`}>
           Toutes les matières
         </Link>
@@ -112,65 +108,78 @@ export default async function LessonsPage({
           ))}
       </div>
 
-      <div className="mb-5 grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-3 sm:grid-cols-[auto_1fr] sm:items-center">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
-        {locked ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="chip chip-active">🔒 {dashboard.student.section}</span>
-            <span className="text-xs text-[var(--ink-soft)]">
-              Abonnement individuel verrouillé sur cette unique section
-            </span>
-          </div>
-        ) : (
+      {/* Filtres secondaires repliés par défaut : le résumé affiche la sélection active. */}
+      <details className="filter-details mb-5">
+        <summary className="filter-details-summary">
+          <span>Filière &amp; trimestre</span>
+          <span className="filter-details-state">
+            {locked ? dashboard.student.section : activeSection ?? "Toutes les filières"} ·{" "}
+            {activePeriod ? PERIOD_BY_ID[activePeriod].label : "Toute l'année"}
+          </span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
+            <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
+        <div className="filter-details-body grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
+          {locked ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="chip chip-active">🔒 {dashboard.student.section}</span>
+              <span className="text-xs text-[var(--ink-soft)]">
+                Abonnement individuel verrouillé sur cette unique section
+              </span>
+            </div>
+          ) : (
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+              <Link
+                href={filterHref({ section: null })}
+                className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
+              >
+                Toutes
+              </Link>
+              {SECTIONS.map((item) => (
+                <Link
+                  key={item}
+                  href={filterHref({ section: item })}
+                  className={`chip whitespace-nowrap ${activeSection === item ? "chip-active" : ""}`}
+                >
+                  {item}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Trimestre</p>
           <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             <Link
-              href={filterHref({ section: null })}
-              className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
+              href={filterHref({ trimestre: null })}
+              className={`chip whitespace-nowrap ${!activePeriod ? "chip-active" : ""}`}
             >
-              Toutes
+              Toute l&apos;année
             </Link>
-            {SECTIONS.map((item) => (
+            {PERIODS.map((period) => (
               <Link
-                key={item}
-                href={filterHref({ section: item })}
-                className={`chip whitespace-nowrap ${activeSection === item ? "chip-active" : ""}`}
+                key={period.id}
+                href={filterHref({ trimestre: period.id })}
+                className={`chip whitespace-nowrap ${activePeriod === period.id ? "chip-active" : ""}`}
+                title={`${period.label} · ${period.exam}`}
               >
-                {item}
+                {period.label}
               </Link>
             ))}
           </div>
-        )}
-
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Trimestre</p>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-          <Link
-            href={filterHref({ trimestre: null })}
-            className={`chip whitespace-nowrap ${!activePeriod ? "chip-active" : ""}`}
-          >
-            Toute l&apos;année
-          </Link>
-          {PERIODS.map((period) => (
-            <Link
-              key={period.id}
-              href={filterHref({ trimestre: period.id })}
-              className={`chip whitespace-nowrap ${activePeriod === period.id ? "chip-active" : ""}`}
-              title={`${period.label} · ${period.exam}`}
-            >
-              {period.label}
-            </Link>
-          ))}
+          {activeSection ? (
+            <div className="sm:col-span-2">
+              <Link
+                href={`/programme?section=${encodeURIComponent(activeSection)}`}
+                className="text-xs font-semibold text-[var(--brand)]"
+              >
+                Voir le programme complet de la filière {activeSection} →
+              </Link>
+            </div>
+          ) : null}
         </div>
-        {activeSection ? (
-          <div className="sm:col-span-2">
-            <Link
-              href={`/programme?section=${encodeURIComponent(activeSection)}`}
-              className="text-xs font-semibold text-[var(--brand)]"
-            >
-              Voir le programme complet de la filière {activeSection} →
-            </Link>
-          </div>
-        ) : null}
-      </div>
+      </details>
 
       <div className="space-y-6">
         {grouped.map(({ subject, lessons: subjectLessons }) => {

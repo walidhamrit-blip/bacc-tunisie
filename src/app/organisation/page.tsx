@@ -22,15 +22,10 @@ export default async function OrganisationPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Organisation & régularité · Méthode Pomodoro & Calendrier"
-        title="Rythme tes révisions jusqu'au jour J"
+        eyebrow="Organisation"
+        title="Organiser mes révisions"
         description={
-          <p>
-            Alterne <strong className="text-[var(--ink)]">25 minutes de concentration</strong> et{" "}
-            <strong className="text-[var(--ink)]">5 minutes de pause</strong> avec alerte sonore automatique, tout en
-            gardant sous les yeux le <strong className="text-[var(--ink)]">compte à rebours J-J</strong> avant le coup
-            d&apos;envoi des épreuves nationales du Baccalauréat.
-          </p>
+          <p>Un minuteur 25 min / 5 min et le compte à rebours avant les épreuves du bac.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

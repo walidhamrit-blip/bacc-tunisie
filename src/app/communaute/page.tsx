@@ -29,14 +29,10 @@ export default async function CommunautePage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Entraide bacheliers · Fiches courtes vérifiées"
-        title="Espace communautaire de fiches"
+        eyebrow="Communauté"
+        title="Fiches de la communauté"
         description={
-          <p>
-            Consulte les fiches synthétiques partagées par d&apos;autres élèves du Bac tunisien, encourage les
-            meilleures astuces avec un <strong className="text-[var(--ink)]">« J&apos;aime »</strong>, et publie tes
-            propres résumés de chapitres après validation simple.
-          </p>
+          <p>Consulte les fiches partagées par d&apos;autres élèves et publie les tiennes.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

@@ -22,11 +22,13 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div className="mb-9 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="max-w-2xl">
         {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        <h1 className="display text-3xl font-semibold text-[var(--ink)] sm:text-[2.5rem]">{title}</h1>
-        {description ? <div className="mt-3 text-[0.95rem] text-[var(--ink-soft)]">{description}</div> : null}
+        <h1 className="display text-[2rem] font-semibold text-[var(--ink)] sm:text-[2.25rem]">{title}</h1>
+        {description ? (
+          <div className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ink-soft)]">{description}</div>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -34,7 +36,32 @@ export function PageHeader({
 }
 
 export function PageShell({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-6xl px-4 py-9 sm:px-6 sm:py-12">{children}</div>;
+  return <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">{children}</div>;
+}
+
+/** Titre de section homogène : un seul niveau de hiérarchie visuelle par bloc. */
+export function SectionHeading({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  action?: { href: string; label: string };
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+        <h2 className="display mt-1 text-2xl font-semibold text-[var(--ink)]">{title}</h2>
+      </div>
+      {action ? (
+        <Link href={action.href} className="link-arrow">
+          {action.label} <span aria-hidden>→</span>
+        </Link>
+      ) : null}
+    </div>
+  );
 }
 
 export function LevelPill({ level, showShort = false }: { level: LevelLabel; showShort?: boolean }) {

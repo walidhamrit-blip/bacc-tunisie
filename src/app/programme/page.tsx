@@ -34,14 +34,10 @@ export default async function ProgramPage({
     return (
       <PageShell>
         <PageHeader
-          eyebrow="Programme officiel · 4ème année"
-          title="Le plan des cours, filière par filière"
+          eyebrow="Apprendre"
+          title="Programme par filière"
           description={
-            <p>
-              Chaque filière du baccalauréat tunisien a son propre programme : des matières obligatoires, des
-              coefficients, et des chapitres répartis sur les trois trimestres de l&apos;année. Choisis ta filière pour
-              voir ton année complète, chapitre par chapitre, avec les devoirs de synthèse de chaque trimestre.
-            </p>
+            <p>Choisis ta filière pour voir tes chapitres, trimestre par trimestre, avec les devoirs de synthèse.</p>
           }
           actions={
             <Link href="/matieres" className="btn btn-ghost btn-sm">
@@ -104,7 +100,7 @@ export default async function ProgramPage({
     <PageShell>
       <PageHeader
         eyebrow={`Programme officiel · ${activeSection}`}
-        title="Ton année de bac, trimestre par trimestre"
+        title="Mon année, trimestre par trimestre"
         description={<p>{program.rhythm}</p>}
         actions={
           <>
@@ -118,7 +114,7 @@ export default async function ProgramPage({
         }
       />
 
-      <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
         {PROGRAM.map((entry) => (
           <Link
             key={entry.section}
@@ -213,7 +209,7 @@ export default async function ProgramPage({
 
       {vue === "devoirs" ? (
         <section className="space-y-5">
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
             {PERIODS.map((period) => (
               <Link
                 key={period.id}
@@ -313,7 +309,7 @@ export default async function ProgramPage({
         </section>
       ) : (
       <>
-      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
         <Link
           href={`/programme?section=${encodeURIComponent(activeSection)}`}
           className={`chip whitespace-nowrap ${!activeSubject ? "chip-active" : ""}`}

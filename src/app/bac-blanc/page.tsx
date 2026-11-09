@@ -44,14 +44,10 @@ export default async function BacBlancPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Simulateur d'examen · Mode chronométré"
-        title="Bac Blanc chronométré"
+        eyebrow="S'entraîner"
+        title="Bac blanc chronométré"
         description={
-          <p>
-            Passe une série de questions en conditions réelles d&apos;examen : compte à rebours actif, navigation libre
-            entre les questions, aucun corrigé dévoilé pendant l&apos;épreuve et bilan complet noté sur 20 à la fin du
-            chrono.
-          </p>
+          <p>Une épreuve chronométrée, sans corrigé pendant l&apos;épreuve, avec un bilan noté sur 20 à la fin.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

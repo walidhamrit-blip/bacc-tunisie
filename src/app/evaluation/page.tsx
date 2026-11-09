@@ -32,14 +32,10 @@ export default async function EvaluationPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Tableau d'évaluation de niveau & Gamification"
-        title="Où en es-tu, et quelle mention peux-tu viser ?"
+        eyebrow="Ma progression"
+        title="Mon niveau et ma mention"
         description={
-          <p>
-            Ce tableau combine ton historique de scores (quiz, Bac Blanc chronométrés, notes de devoirs), les fiches
-            comprises et les coefficients officiels de ta filière pour estimer ta{" "}
-            <strong className="text-[var(--ink)]">Probabilité de Mention</strong> au Baccalauréat.
-          </p>
+          <p>Ton historique de scores et tes fiches comprises donnent une estimation de ta moyenne et de ta mention.</p>
         }
         actions={
           <>

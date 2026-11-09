@@ -28,20 +28,14 @@ export default async function MonComptePage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Espace élève individuel · Anti-partage de compte"
+        eyebrow="Mon compte"
         title={
           !student.isDemo && student.sectionLocked
-            ? "Mon abonnement & mon Code Élève"
-            : "Inscription personnelle (1 seule section)"
+            ? "Mon compte et mon Code Élève"
+            : "Créer mon compte"
         }
         description={
-          <p>
-            Chaque inscription sur <strong className="text-[var(--ink)]">Bac Coach Tunisie</strong>{" "}
-            est strictement individuelle : elle débloque l&apos;intégralité des cours, flashcards,
-            simulateurs Bac Blanc et corrigés PDF pour{" "}
-            <strong className="text-[var(--ink)]">une seule section officielle</strong> et jusqu&apos;à
-            2 appareils personnels.
-          </p>
+          <p>Un compte individuel, lié à une seule section officielle et utilisable sur 2 appareils.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
