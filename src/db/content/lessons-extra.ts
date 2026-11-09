@@ -17,6 +17,10 @@ import { technologieLessons } from "@/db/content/lessons-technologie";
 import { economieLessons } from "@/db/content/lessons-economie";
 import { gestionLessons } from "@/db/content/lessons-gestion";
 import { histoireGeoLessons } from "@/db/content/lessons-histoire-geo";
+import { histoireGeoLettresLessons } from "@/db/content/lessons-histoire-geo-lettres";
+import { arabeLettresLessons } from "@/db/content/lessons-arabe-lettres";
+import { philosophieLettresLessons } from "@/db/content/lessons-philosophie-lettres";
+import { lettresComplementsLessons } from "@/db/content/lessons-lettres-complements";
 
 /**
  * Fiches complémentaires, organisées filière par filière pour couvrir
@@ -43,6 +47,10 @@ export const extraLessons: LessonSeed[] = [
   ...economieLessons,
   ...gestionLessons,
   ...histoireGeoLessons,
+  ...histoireGeoLettresLessons,
+  ...arabeLettresLessons,
+  ...philosophieLettresLessons,
+  ...lettresComplementsLessons,
   ...informatiqueCommunLessons,
   ...mementoLessons,
 ];
