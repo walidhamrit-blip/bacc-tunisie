@@ -910,4 +910,126 @@ export const examsSeed: ExamSeed[] = [
       "Un résultat numérique sans unité est systématiquement pénalisé.",
     ],
   },
+  {
+    slug: "bac-gestion-session",
+    title: "Épreuve de gestion — comptabilité, coûts et analyse financière",
+    subjectSlug: "gestion",
+    section: "Économie & Gestion",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve complète de gestion avec corrigé : écritures de régularisation, seuil de rentabilité et calcul de trésorerie nette.",
+    parts: [
+      {
+        title: "Partie 1 — Comptabilité générale (8 points)",
+        intro:
+          "L'entreprise a payé en décembre un loyer de 3 600 dt couvrant les trois premiers mois de l'année suivante.",
+        questions: [
+          {
+            prompt: "Quelle écriture de régularisation faut-il passer au 31 décembre ?",
+            method: "Isoler la part qui concerne l'exercice suivant et la sortir des charges.",
+            answer:
+              "On constate une charge constatée d'avance de 2 400 dt (deux mois sur trois) : on crédite le compte de charges de 2 400 dt et on débite le compte de charges constatées d'avance du même montant.",
+            points: 8,
+          },
+        ],
+      },
+      {
+        title: "Partie 2 — Comptabilité analytique (7 points)",
+        intro:
+          "Chiffre d'affaires : 500 000 dt. Charges variables : 300 000 dt. Charges fixes : 150 000 dt.",
+        questions: [
+          {
+            prompt: "Calculer le seuil de rentabilité et l'exprimer en mois.",
+            method: "MCA = CA − CV ; taux = MCA/CA ; SR = CF/taux ; point mort = SR/CA × 12.",
+            answer:
+              "MCA = 200 000 dt, taux = 40 %, SR = 150 000/0,40 = 375 000 dt, point mort = 375 000/500 000 × 12 = 9 mois.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie 3 — Analyse financière (5 points)",
+        intro: "Ressources stables : 900 000 dt. Emplois stables : 750 000 dt. BFR : 200 000 dt.",
+        questions: [
+          {
+            prompt: "Calculer le fonds de roulement et la trésorerie nette, puis commenter.",
+            method: "FR = ressources stables − emplois stables ; TN = FR − BFR.",
+            answer:
+              "FR = 150 000 dt ; TN = 150 000 − 200 000 = −50 000 dt. La trésorerie est négative : le cycle d'exploitation consomme plus que le fonds de roulement ne le permet, ce qui crée un risque de tension de liquidité.",
+            points: 5,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Poser les formules avant les calculs.",
+      "Vérifier les unités et les signes des écarts.",
+      "Commenter chaque résultat chiffré en une phrase.",
+    ],
+    correctionNotes: [
+      "Une charge constatée d'avance se calcule au prorata des mois restants.",
+      "Le seuil de rentabilité s'exprime en dinars de chiffre d'affaires.",
+      "Une trésorerie nette négative n'invalide pas la rentabilité : elle signale un besoin de financement du cycle.",
+    ],
+  },
+  {
+    slug: "bac-histoire-geo-session",
+    title: "Épreuve d'histoire-géographie — documents et croquis",
+    subjectSlug: "histoire-geographie",
+    section: "Économie & Gestion · Lettres",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve d'histoire-géographie avec corrigé : analyse d'un document sur l'économie coloniale et croquis de l'organisation du territoire tunisien.",
+    parts: [
+      {
+        title: "Partie A — Histoire (10 points)",
+        intro:
+          "Document : tableau statistique des exportations tunisiennes en 1938 (phosphates, huile d'olive, céréales) et des importations (produits manufacturés).",
+        questions: [
+          {
+            prompt: "Présentez le document.",
+            method: "Nature, source, date, thème, espace concerné.",
+            answer:
+              "Tableau statistique publié par l'administration du protectorat en 1938, présentant la structure des échanges extérieurs de la Tunisie : matières premières exportées, produits manufacturés importés.",
+            points: 4,
+          },
+          {
+            prompt: "Que révèle ce document de la structure de l'économie coloniale ?",
+            method: "Décrire, puis interpréter avec la notion d'économie extravertie.",
+            answer:
+              "La Tunisie exporte des produits bruts et importe des produits finis : c'est une économie extravertie et déséquilibrée, dont la valeur ajoutée est réalisée hors du territoire. Cette structure crée une dépendance et alimente le mécontentement social.",
+            points: 6,
+          },
+        ],
+      },
+      {
+        title: "Partie B — Géographie (10 points)",
+        questions: [
+          {
+            prompt: "Réalisez un croquis de l'organisation du territoire tunisien.",
+            method: "Trois idées : poids du littoral, métropoles, espaces intérieurs et leurs dynamiques.",
+            answer:
+              "Légende en trois parties : 1) un littoral densément peuplé et industrialisé (aplats) ; 2) deux métropoles majeures, Tunis et Sfax, et des villes relais (figurés ponctuels) ; 3) des espaces intérieurs moins denses, spécialisés (agriculture, élevage, mines) et reliés par des axes de communication. Titre obligatoire : « L'organisation du territoire tunisien ».",
+            points: 10,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Présenter tout document avant de l'analyser.",
+      "Rédiger la légende du croquis avant de dessiner.",
+      "Conclure chaque partie par une phrase de synthèse.",
+    ],
+    correctionNotes: [
+      "La présentation complète du document vaut à elle seule plusieurs points.",
+      "Un croquis sans titre ni légende structurée perd l'essentiel des points.",
+      "L'analyse doit relier les données à un mécanisme économique ou politique.",
+    ],
+  },
 ];

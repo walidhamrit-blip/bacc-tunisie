@@ -14,6 +14,9 @@ import { chimieLessons } from "@/db/content/lessons-chimie";
 import { informatiqueCommunLessons } from "@/db/content/lessons-informatique-commun";
 import { svtExperimentalLessons } from "@/db/content/lessons-svt-experimental";
 import { technologieLessons } from "@/db/content/lessons-technologie";
+import { economieLessons } from "@/db/content/lessons-economie";
+import { gestionLessons } from "@/db/content/lessons-gestion";
+import { histoireGeoLessons } from "@/db/content/lessons-histoire-geo";
 
 /**
  * Fiches complémentaires, organisées filière par filière pour couvrir
@@ -37,6 +40,9 @@ export const extraLessons: LessonSeed[] = [
   ...svtLessons,
   ...svtExperimentalLessons,
   ...technologieLessons,
+  ...economieLessons,
+  ...gestionLessons,
+  ...histoireGeoLessons,
   ...informatiqueCommunLessons,
   ...mementoLessons,
 ];
