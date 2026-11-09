@@ -2,115 +2,177 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NAV_GROUPS, PRIMARY_NAV, isNavActive } from "@/lib/navigation";
 
-const NAV = [
-  { href: "/programme", label: "Programme" },
-  { href: "/matieres", label: "Matières" },
-  { href: "/cours", label: "Cours" },
-  { href: "/communaute", label: "Communauté" },
-  { href: "/flashcards", label: "Flashcards" },
-  { href: "/carnet-erreurs", label: "Carnet SRS" },
-  { href: "/exercices", label: "Exercices" },
-  { href: "/examens", label: "Examens" },
-  { href: "/bac-blanc", label: "Bac Blanc" },
-  { href: "/quiz", label: "Quiz" },
-  { href: "/calculateur", label: "Calculateur FG" },
-  { href: "/organisation", label: "Organisation" },
-  { href: "/correction", label: "Corriger PDF" },
-];
-
+/**
+ * En-tête simplifié : 4 accès permanents + un menu unique qui rassemble
+ * TOUTES les rubriques en 3 groupes. Sur mobile, le même menu remplace
+ * l'ancienne double barre de liens défilante.
+ */
 export function SiteHeader() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (panelRef.current?.contains(target) || menuButtonRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    /* Fermeture également sur retour/avant arrière du navigateur. */
+    const handlePopState = () => setOpen(false);
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [open]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2.5 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[var(--brand)] text-lg text-white shadow-[0_8px_18px_-10px_rgba(200,16,46,0.9)]">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden>
-              <path d="M12 2.5 14.3 9h6.7l-5.4 4 2 6.5-5.6-3.9L6.4 19.5l2-6.5L3 9h6.7L12 2.5Z" fill="currentColor" />
-            </svg>
-          </span>
-          <span className="leading-tight">
-            <span className="display block text-[1.05rem] font-semibold text-[var(--ink)]">Bac Coach</span>
-            <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-              Tunisie · programme officiel
+    <>
+      <header className="site-header">
+        <div className="site-header-inner">
+          <Link href="/" className="brand" aria-label="Bac Coach Tunisie · Accueil">
+            <span className="brand-mark" aria-hidden>
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+                <path d="M12 2.5 14.3 9h6.7l-5.4 4 2 6.5-5.6-3.9L6.4 19.5l2-6.5L3 9h6.7L12 2.5Z" fill="currentColor" />
+              </svg>
             </span>
-          </span>
-        </Link>
+            <span className="brand-text">
+              <strong className="display">Bac Coach</strong>
+              <span>Tunisie</span>
+            </span>
+          </Link>
 
-        <nav className="no-scrollbar hidden items-center gap-0.5 overflow-x-auto xl:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`whitespace-nowrap rounded-full px-1.5 py-1.5 text-[0.72rem] font-semibold transition ${
-                isActive(item.href)
-                  ? "bg-[var(--ink)] text-[var(--cream)]"
-                  : "text-[var(--ink-soft)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
-              }`}
-            >
-              {item.label}
+          <nav className="primary-nav" aria-label="Accès rapides">
+            {PRIMARY_NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isNavActive(pathname, item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="header-actions">
+            <ThemeToggle />
+            <Link href="/mon-compte" className="header-account" aria-label="Mon compte">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+                <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              <span>Compte</span>
             </Link>
-          ))}
-        </nav>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <ThemeToggle />
-          <Link
-            href="/evaluation"
-            className={`btn btn-sm hidden sm:inline-flex ${
-              isActive("/evaluation") ? "btn-primary" : "btn-ghost"
-            }`}
-            aria-label="Tableau d'évaluation de mon niveau"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
-              <path d="M4 20V10m5 10V4m5 16v-7m5 7V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span>Mon niveau</span>
-          </Link>
-          <Link
-            href="/mon-compte"
-            className={`btn btn-sm ${
-              isActive("/mon-compte") ? "btn-dark" : "btn-primary"
-            }`}
-            aria-label="Mon compte élève et inscription mono-section"
-          >
-            <span aria-hidden>🔒</span>
-            <span>Mon compte</span>
-          </Link>
+            <button
+              ref={menuButtonRef}
+              type="button"
+              className="menu-trigger"
+              onClick={() => setOpen((value) => !value)}
+              aria-expanded={open}
+              aria-controls="site-menu"
+            >
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+                {open ? (
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                )}
+              </svg>
+              <span>{open ? "Fermer" : "Menu"}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-[var(--line)] px-4 py-2 xl:hidden">
-        {NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.78rem] font-semibold ${
-              isActive(item.href)
-                ? "bg-[var(--ink)] text-[var(--cream)]"
-                : "bg-[var(--paper)] text-[var(--ink-soft)]"
-            }`}
+      {open ? (
+        <div className="menu-layer">
+          <div
+            id="site-menu"
+            ref={panelRef}
+            className="menu-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Toutes les rubriques"
           >
-            {item.label}
-          </Link>
-        ))}
-        <Link
-          href="/evaluation"
-          className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.78rem] font-semibold ${
-            isActive("/evaluation")
-              ? "bg-[var(--ink)] text-[var(--cream)]"
-              : "bg-[var(--paper)] text-[var(--ink-soft)]"
-          }`}
-        >
-          Mon niveau
-        </Link>
-      </div>
-    </header>
+            <div className="menu-panel-head">
+              <div>
+                <p className="eyebrow">Plan du site</p>
+                <p className="display text-lg font-semibold text-[var(--ink)]">Toutes les rubriques</p>
+              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className="btn btn-ghost btn-sm !px-2.5"
+                onClick={() => {
+                  setOpen(false);
+                  menuButtonRef.current?.focus();
+                }}
+                aria-label="Fermer le menu"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="menu-grid">
+              {NAV_GROUPS.map((group) => (
+                <section key={group.id} className="menu-group">
+                  <p className="menu-group-title">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+                      <path d={group.icon} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {group.label}
+                  </p>
+                  <ul>
+                    {group.items.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          aria-current={isNavActive(pathname, item.href) ? "page" : undefined}
+                        >
+                          <span className="menu-item-label">{item.label}</span>
+                          {item.hint ? <span className="menu-item-hint">{item.hint}</span> : null}
+                          <span className="menu-item-arrow" aria-hidden>→</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            <p className="menu-panel-foot">
+              Astuce : les quatre accès rapides (Cours, Exercices, Examens, Quiz) restent toujours visibles en haut de page.
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

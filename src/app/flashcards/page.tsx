@@ -63,13 +63,10 @@ export default async function FlashcardsPage({
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Mémorisation active · Recto / Verso"
-        title="Cartes mémos (Flashcards)"
+        eyebrow="Mémorisation"
+        title="Flashcards"
         description={
-          <p>
-            Entraîne ta mémoire active : lis la question au recto, formule ta réponse à voix haute ou sur brouillon,
-            retourne la carte pour vérifier, puis classe-la en <strong>Maîtrisée</strong> ou <strong>À revoir</strong>.
-          </p>
+          <p>Retourne la carte pour vérifier ta réponse, puis classe-la en « Maîtrisée » ou « À revoir ».</p>
         }
         actions={
           <Link href="/cours" className="btn btn-ghost btn-sm">
@@ -78,56 +75,68 @@ export default async function FlashcardsPage({
         }
       />
 
-      <div className="mb-6 grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-3.5 sm:grid-cols-[auto_1fr] sm:items-center">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
-        {locked ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="chip chip-active">🔒 {student.section}</span>
-            <span className="text-xs text-[var(--ink-soft)]">
-              Cartes filtrées sur l&apos;unique section de ton abonnement
-            </span>
-          </div>
-        ) : (
+      <details className="filter-details mb-6">
+        <summary className="filter-details-summary">
+          <span>Filière &amp; matière</span>
+          <span className="filter-details-state">
+            {locked ? student.section : activeSection ?? "Toutes les filières"} ·{" "}
+            {subjects.find((subject) => subject.slug === activeSubject)?.shortName ?? "Toutes les matières"}
+          </span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
+            <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </summary>
+        <div className="filter-details-body grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Filière</p>
+          {locked ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="chip chip-active">🔒 {student.section}</span>
+              <span className="text-xs text-[var(--ink-soft)]">
+                Cartes filtrées sur l&apos;unique section de ton abonnement
+              </span>
+            </div>
+          ) : (
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+              <Link
+                href={buildFilterHref({ section: null })}
+                className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
+              >
+                Toutes
+              </Link>
+              {SECTIONS.map((section) => (
+                <Link
+                  key={section}
+                  href={buildFilterHref({ section })}
+                  className={`chip whitespace-nowrap ${activeSection === section ? "chip-active" : ""}`}
+                >
+                  {section}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Matière</p>
           <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             <Link
-              href={buildFilterHref({ section: null })}
-              className={`chip whitespace-nowrap ${!activeSection ? "chip-active" : ""}`}
+              href={buildFilterHref({ matiere: null })}
+              className={`chip whitespace-nowrap ${!activeSubject ? "chip-active" : ""}`}
             >
-              Toutes
+              Toutes ({lessons.reduce((sum, item) => sum + item.flashcards.length, 0)})
             </Link>
-            {SECTIONS.map((section) => (
-              <Link
-                key={section}
-                href={buildFilterHref({ section })}
-                className={`chip whitespace-nowrap ${activeSection === section ? "chip-active" : ""}`}
-              >
-                {section}
-              </Link>
-            ))}
+            {subjects
+              .filter((subject) => lessons.some((lesson) => lesson.subjectSlug === subject.slug && lesson.flashcards.length > 0))
+              .map((subject) => (
+                <Link
+                  key={subject.slug}
+                  href={buildFilterHref({ matiere: subject.slug })}
+                  className={`chip whitespace-nowrap ${activeSubject === subject.slug ? "chip-active" : ""}`}
+                >
+                  {subject.shortName}
+                </Link>
+              ))}
           </div>
-        )}
-
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Matière</p>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-          <Link
-            href={buildFilterHref({ matiere: null })}
-            className={`chip whitespace-nowrap ${!activeSubject ? "chip-active" : ""}`}
-          >
-            Toutes ({lessons.reduce((sum, item) => sum + item.flashcards.length, 0)})
-          </Link>
-          {subjects
-            .filter((subject) => lessons.some((lesson) => lesson.subjectSlug === subject.slug && lesson.flashcards.length > 0))
-            .map((subject) => (
-              <Link
-                key={subject.slug}
-                href={buildFilterHref({ matiere: subject.slug })}
-                className={`chip whitespace-nowrap ${activeSubject === subject.slug ? "chip-active" : ""}`}
-              >
-                {subject.shortName}
-              </Link>
-            ))}
         </div>
-      </div>
+      </details>
 
       {deckCards.length === 0 ? (
         <EmptyState

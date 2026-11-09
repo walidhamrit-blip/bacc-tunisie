@@ -40,15 +40,12 @@ export default async function SubjectsPage({
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Programme officiel tunisien"
-        title={locked ? `Matières de ta section · ${section}` : "Toutes les matières du baccalauréat"}
+        eyebrow="Apprendre"
+        title={locked ? `Ma section · ${section}` : "Toutes les matières"}
         description={
           <p>
-            Choisis ta matière pour accéder aux fiches de cours, aux exercices corrigés, aux séries et examens ainsi
-            qu&apos;aux quiz.{" "}
-            {locked
-              ? "Ton abonnement individuel est verrouillé sur ton unique section officielle."
-              : "Filtre par section pour ne voir que ton programme."}
+            Choisis ta matière pour retrouver ses cours, exercices, séries et quiz.{" "}
+            {locked ? "Ton abonnement est lié à une seule section." : "Filtre par section pour voir ton programme."}
           </p>
         }
         actions={
@@ -72,7 +69,7 @@ export default async function SubjectsPage({
         </div>
       ) : (
         <>
-          <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1">
+          <div className="no-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
             <Link href="/matieres" className={`chip ${section === "Toutes les sections" ? "chip-active" : ""}`}>
               Toutes les sections
             </Link>

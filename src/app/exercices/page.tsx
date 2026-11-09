@@ -19,13 +19,10 @@ export default async function ExercisesPage({
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Exercices corrigés"
-        title="S'entraîner avec la méthode, pas seulement la réponse"
+        eyebrow="S'entraîner"
+        title="Exercices corrigés"
         description={
-          <p>
-            Chaque exercice contient des indices pour démarrer, un corrigé découpé étape par étape et la réponse
-            finale. Marque un exercice comme compris pour le suivre dans ton tableau de niveau.
-          </p>
+          <p>Des indices pour démarrer, un corrigé étape par étape, et un suivi dans ton tableau de niveau.</p>
         }
         actions={
           <Link href="/correction" className="btn btn-primary btn-sm">
@@ -34,7 +31,7 @@ export default async function ExercisesPage({
         }
       />
 
-      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
         <Link href="/exercices" className={`chip whitespace-nowrap ${!active ? "chip-active" : ""}`}>
           Tous
         </Link>

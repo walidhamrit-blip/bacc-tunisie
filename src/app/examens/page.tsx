@@ -13,13 +13,10 @@ export default async function ExamsPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Examens & séries"
-        title="Sujets type bac, corrigés question par question"
+        eyebrow="S'entraîner"
+        title="Examens et séries corrigés"
         description={
-          <p>
-            Chaque sujet est accompagné d&apos;un barème indicatif, d&apos;un corrigé détaillé avec la méthode attendue
-            et de conseils de rédaction. Entraîne-toi en conditions réelles, puis compare ta copie.
-          </p>
+          <p>Des sujets type bac avec barème et corrigé détaillé, pour t&apos;entraîner en conditions réelles.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

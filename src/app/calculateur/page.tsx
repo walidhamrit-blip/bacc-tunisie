@@ -50,16 +50,10 @@ export default async function CalculateurPage({
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Simulateur officiel · Baccalauréat & Orientation Universitaire"
-        title="Calculateur Moyenne du Bac & Score FG"
+        eyebrow="Mes outils"
+        title="Calculateur de moyenne & score FG"
         description={
-          <p>
-            Simule ta <strong className="text-[var(--ink)]">Moyenne Générale (MG / 20)</strong>,
-            vérifie les règles officielles de mention, de bonus d&apos;option et de{" "}
-            <strong className="text-[var(--ink)]">rachat (الإسعاف)</strong>, et calcule ton{" "}
-            <strong className="text-[var(--ink)]">Score de la Formule Globale (FG)</strong> du
-            Guide de l&apos;Orientation Universitaire tunisien.
-          </p>
+          <p>Calcule ta moyenne du bac et ton score de la Formule Globale (FG) selon les règles officielles.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

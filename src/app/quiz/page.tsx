@@ -12,13 +12,10 @@ export default async function QuizzesPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Quiz interactifs"
-        title="Vérifier ce que tu as vraiment compris"
+        eyebrow="S'entraîner"
+        title="Quiz"
         description={
-          <p>
-            Des quiz courts (4 questions) avec correction immédiate et explication de chaque réponse. Ton score est
-            enregistré dans ton tableau d&apos;évaluation pour suivre ta progression matière par matière.
-          </p>
+          <p>Des quiz courts avec correction immédiate : chaque score alimente ton tableau de niveau.</p>
         }
         actions={
           <Link href="/evaluation" className="btn btn-ghost btn-sm">

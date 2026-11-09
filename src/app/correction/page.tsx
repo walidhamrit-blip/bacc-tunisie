@@ -28,13 +28,9 @@ export default async function CorrectionPage({
     <PageShell>
       <PageHeader
         eyebrow="Correction assistée"
-        title="Joins ton PDF d'exercices, comprends ta correction"
+        title="Corriger un PDF d'exercices"
         description={
-          <p>
-            Dépose une feuille d&apos;exercices en PDF (ou colle l&apos;énoncé). L&apos;application lit le document,
-            repère les questions, puis te donne pour chaque exercice : la méthode, les rappels de cours utiles, les
-            pièges à éviter et les étapes de rédaction.
-          </p>
+          <p>Dépose un PDF d&apos;exercices : repérage des questions, méthode, rappels de cours et pièges à éviter.</p>
         }
         actions={
           <>

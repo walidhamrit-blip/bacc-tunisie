@@ -58,14 +58,10 @@ export default async function CarnetErreursPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Mémorisation active · Algorithme SM-2 & Boîtes de Leitner"
-        title="Carnet d'Erreurs Intelligent & SRS"
+        eyebrow="Mémorisation"
+        title="Carnet d'erreurs"
         description={
-          <p>
-            Chaque erreur commise en <strong className="text-[var(--ink)]">Quiz</strong> ou consignée
-            après un <strong className="text-[var(--ink)]">Devoir surveillé</strong> devient une carte
-            de révision espacée programmée juste avant l&apos;oubli pour sécuriser ta mention au Bac.
-          </p>
+          <p>Transforme tes erreurs en cartes de révision, reprogrammées au bon moment pour ne pas les oublier.</p>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
