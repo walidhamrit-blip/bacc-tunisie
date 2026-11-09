@@ -1,4 +1,5 @@
 import { scienceLessons, type LessonSeed } from "@/db/content/lessons-sciences";
+import { extraLessons } from "@/db/content/lessons-extra";
 
 const philoLiberte: LessonSeed = {
   slug: "la-liberte",
@@ -787,4 +788,4 @@ export const lettersLessons: LessonSeed[] = [
   gestionBilan,
 ];
 
-export const lessonsSeed: LessonSeed[] = [...scienceLessons, ...lettersLessons];
+export const lessonsSeed: LessonSeed[] = [...scienceLessons, ...lettersLessons, ...extraLessons];

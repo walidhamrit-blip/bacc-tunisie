@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader, PageShell, SubjectGlyph } from "@/components/ui";
 import { PROGRAM, getProgramSection, programChapters } from "@/db/content/program";
-import { getDashboard, getStudentLessonSlugs, listLessons, listQuizzes, listSubjects } from "@/lib/data";
+import { getDashboard, getStudentLessonSlugs, listExams, listLessons, listQuizzes, listSubjects } from "@/lib/data";
 import { PERIODS, SECTIONS } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +16,17 @@ export default async function ProgramPage({
   const vue = params.vue === "devoirs" ? "devoirs" : "matieres";
   const focusPeriod = PERIODS.find((period) => period.id === params.trimestre)?.id ?? "T1";
 
-  const [subjects, lessons, quizzes, dashboard] = await Promise.all([
+  const [subjects, lessons, quizzes, dashboard, exams] = await Promise.all([
     listSubjects(),
     listLessons(),
     listQuizzes(),
     getDashboard(),
+    listExams(),
   ]);
   const doneLessons = await getStudentLessonSlugs(dashboard.student.id);
   const subjectBySlug = new Map(subjects.map((subject) => [subject.slug, subject]));
   const lessonBySlug = new Map(lessons.map((lesson) => [lesson.slug, lesson]));
+  const examSlugs = new Set(exams.map((exam) => exam.slug));
 
   const activeSection = section ?? dashboard.student.section;
   const program = getProgramSection(activeSection) ?? PROGRAM[0];
@@ -268,6 +270,8 @@ export default async function ProgramPage({
                     {rows.map(({ theme, chapter }) => {
                       const lesson = chapter.lessonSlug ? lessonBySlug.get(chapter.lessonSlug) : null;
                       const quiz = chapter.quizSlug ? quizzes.find((item) => item.slug === chapter.quizSlug) : null;
+                      const exam =
+                        chapter.examSlug && examSlugs.has(chapter.examSlug) ? chapter.examSlug : null;
                       return (
                         <li
                           key={`${theme.slug}-${chapter.slug}`}
@@ -296,6 +300,11 @@ export default async function ProgramPage({
                           {quiz ? (
                             <Link href={`/quiz/${quiz.slug}`} className="btn btn-ghost btn-sm !px-2.5 !py-1 !text-xs">
                               Quiz
+                            </Link>
+                          ) : null}
+                          {exam ? (
+                            <Link href={`/examens/${exam}`} className="btn btn-ghost btn-sm !px-2.5 !py-1 !text-xs">
+                              Sujet corrigé
                             </Link>
                           ) : null}
                         </li>
@@ -381,6 +390,8 @@ export default async function ProgramPage({
                           const quiz = chapter.quizSlug
                             ? quizzes.find((item) => item.slug === chapter.quizSlug)
                             : null;
+                          const exam =
+                            chapter.examSlug && examSlugs.has(chapter.examSlug) ? chapter.examSlug : null;
                           const done = chapter.lessonSlug ? doneLessons.has(chapter.lessonSlug) : false;
                           const period = PERIODS.find((item) => item.id === chapter.period);
                           return (
@@ -428,6 +439,11 @@ export default async function ProgramPage({
                                 {quiz ? (
                                   <Link href={`/quiz/${quiz.slug}`} className="btn btn-ghost btn-sm !px-2.5 !py-1 !text-xs">
                                     Quiz
+                                  </Link>
+                                ) : null}
+                                {exam ? (
+                                  <Link href={`/examens/${exam}`} className="btn btn-ghost btn-sm !px-2.5 !py-1 !text-xs">
+                                    Sujet corrigé
                                   </Link>
                                 ) : null}
                               </span>

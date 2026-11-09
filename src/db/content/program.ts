@@ -1,3 +1,4 @@
+import { examsSeed } from "@/db/content/exams";
 import { subjectSeeds } from "@/db/content/subjects";
 import type { PeriodId, SectionName } from "@/lib/sections";
 
@@ -31,6 +32,8 @@ export type ProgramChapter = {
   period: PeriodId;
   lessonSlug?: string;
   quizSlug?: string;
+  /** Sujet corrigé associé (voir `exams.ts`). */
+  examSlug?: string;
 };
 
 export type ProgramTheme = {
@@ -66,8 +69,15 @@ const ch = (
   slug: string,
   title: string,
   period: PeriodId,
-  links: { lesson?: string; quiz?: string } = {},
-): ProgramChapter => ({ slug, title, period, lessonSlug: links.lesson, quizSlug: links.quiz });
+  links: { lesson?: string; quiz?: string; exam?: string } = {},
+): ProgramChapter => ({
+  slug,
+  title,
+  period,
+  lessonSlug: links.lesson,
+  quizSlug: links.quiz,
+  examSlug: links.exam,
+});
 
 const th = (
   slug: string,
@@ -77,10 +87,35 @@ const th = (
 ): ProgramTheme => ({ slug, title, hours, chapters });
 
 /** Juin : révision générale et préparation de l'épreuve du baccalauréat. */
+/** Mémento de révision partagé par toutes les filières qui suivent la matière. */
+const MEMENTO: Record<string, string> = {
+  mathematiques: "memento-mathematiques",
+  physique: "memento-physique",
+  philosophie: "memento-philosophie",
+  arabe: "memento-arabe",
+  francais: "memento-francais",
+  anglais: "memento-anglais",
+  informatique: "memento-informatique",
+};
+
+/**
+ * Les sujets corrigés vivent dans `exams.ts` : on relie le chapitre de révision
+ * à la série ou à la session déjà disponible pour la matière.
+ */
+const EXAM_BY_SUBJECT = new Map<string, string>();
+for (const exam of examsSeed) {
+  const current = EXAM_BY_SUBJECT.get(exam.subjectSlug);
+  if (!current || exam.kind === "session") EXAM_BY_SUBJECT.set(exam.subjectSlug, exam.slug);
+}
+
 const revThemes = (slug: string): ProgramTheme =>
   th("revision", "Révision & bac", [
-    ch(`${slug}-revision-fiches`, "Révision générale : fiches, formules et notions clés", "REV"),
-    ch(`${slug}-revision-bac`, "Sujets d'examen corrigés et entraînement chronométré", "REV"),
+    ch(`${slug}-revision-fiches`, "Révision générale : fiches, formules et notions clés", "REV", {
+      lesson: MEMENTO[slug],
+    }),
+    ch(`${slug}-revision-bac`, "Sujets d'examen corrigés et entraînement chronométré", "REV", {
+      exam: EXAM_BY_SUBJECT.get(slug),
+    }),
   ]);
 
 const sub = (
@@ -103,23 +138,23 @@ const sub = (
 /** Philosophie — sections scientifiques, Économie & Gestion, Informatique, Sport (coef. 1). */
 const PHILO_TC = sub("philosophie", "×1", [
   th("philo-notions", "L'humain entre pluralité et unité", [
-    ch("philo-ipsete", "L'ipséité et l'altérité : le soi, le corps et l'autre", "T1"),
+    ch("philo-ipsete", "L'ipséité et l'altérité : le soi, le corps et l'autre", "T1", { lesson: "philo-ipseite-alterite" }),
     ch("philo-conscience", "La conscience, l'inconscient et la liberté", "T1", {
       lesson: "la-liberte",
       quiz: "quiz-philo-liberte",
     }),
-    ch("philo-histoire", "L'histoire, la mémoire et le temps humain", "T2"),
-    ch("philo-singularite", "La singularité et l'universalité : identité, différence, culture", "T2"),
-    ch("philo-langage", "La communication et les systèmes symboliques : langue, image, sacré", "T2"),
+    ch("philo-histoire", "L'histoire, la mémoire et le temps humain", "T2", { lesson: "philo-histoire" }),
+    ch("philo-singularite", "La singularité et l'universalité : identité, différence, culture", "T2", { lesson: "philo-singularite-universalite" }),
+    ch("philo-langage", "La communication et les systèmes symboliques : langue, image, sacré", "T2", { lesson: "philo-communication-symbolique" }),
   ]),
   th("philo-science", "La science entre vérité et modélisation", [
-    ch("philo-modelisation", "Les dimensions de la modélisation scientifique", "T3"),
-    ch("philo-limites-epistemologiques", "Limites épistémologiques : réduction, histoire, systèmes techniques", "T3"),
-    ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité et sens", "T3"),
+    ch("philo-modelisation", "Les dimensions de la modélisation scientifique", "T3", { lesson: "philo-modelisation" }),
+    ch("philo-limites-epistemologiques", "Limites épistémologiques : réduction, histoire, systèmes techniques", "T3", { lesson: "philo-limites-science" }),
+    ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité et sens", "T3", { lesson: "philo-limites-science" }),
   ]),
   th("philo-methode", "Méthodologie de l'épreuve", [
-    ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T1"),
-    ch("philo-texte", "L'analyse de texte philosophique : dégager la thèse et l'argumentation", "T2"),
+    ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T1", { lesson: "philo-methode-dissertation" }),
+    ch("philo-texte", "L'analyse de texte philosophique : dégager la thèse et l'argumentation", "T2", { lesson: "philo-analyse-texte" }),
   ]),
 ]);
 
@@ -149,8 +184,8 @@ const PHILO_LETTRES = sub(
     ]),
     th("philo-verite", "III. La science entre vérité et modélisation", [
       ch("philo-modelisation", "Les dimensions de la modélisation scientifique", "T3"),
-      ch("philo-limites-epistemologiques", "Limites épistémologiques de la science", "T3"),
-      ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité, sens", "T3"),
+      ch("philo-limites-epistemologiques", "Limites épistémologiques de la science", "T3", { lesson: "philo-limites-science" }),
+      ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité, sens", "T3", { lesson: "philo-limites-science" }),
     ]),
     th("philo-valeurs", "IV. Les valeurs entre le relatif et l'absolu", [
       ch("philo-morale", "La morale, le devoir et le bonheur", "T3"),
@@ -159,7 +194,7 @@ const PHILO_LETTRES = sub(
     ]),
     th("philo-methode", "V. Méthodologie de l'épreuve", [
       ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T1"),
-      ch("philo-texte", "L'analyse de texte philosophique", "T2"),
+      ch("philo-texte", "L'analyse de texte philosophique", "T2", { lesson: "philo-analyse-texte" }),
     ]),
   ],
   { specialty: true },
@@ -168,23 +203,20 @@ const PHILO_LETTRES = sub(
 /** Arabe — sections scientifiques, Économie & Gestion, Informatique, Sport (coef. 1). */
 const ARABE_TC = sub("arabe", "×1", [
   th("arabe-nathr", "النثر", [
-    ch("arabe-maqala", "المقالة الأدبية والاجتماعية", "T1", {
-      lesson: "balagha-image-poetique",
-      quiz: "quiz-arabe-balagha",
-    }),
-    ch("arabe-qissa", "القصة القصيرة", "T2"),
-    ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2"),
+    ch("arabe-maqala", "المقالة الأدبية والاجتماعية", "T1", { lesson: "arabe-maqala" }),
+    ch("arabe-qissa", "القصة القصيرة", "T2", { lesson: "arabe-qissa" }),
+    ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2", { lesson: "arabe-riwaya" }),
   ]),
   th("arabe-sher", "الشعر", [
     ch("arabe-balagha", "البلاغة · الصورة الشعرية", "T1", {
       lesson: "balagha-image-poetique",
       quiz: "quiz-arabe-balagha",
     }),
-    ch("arabe-tajdid", "الشعر العربي الحديث بين التجديد والكلاسيكية", "T1"),
+    ch("arabe-tajdid", "الشعر العربي الحديث بين التجديد والكلاسيكية", "T1", { lesson: "arabe-tajdid" }),
   ]),
   th("arabe-outils", "اللغة والنحو", [
-    ch("arabe-nahw", "النحو والإعراب · مراجعة وتراكيب", "T2"),
-    ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3"),
+    ch("arabe-nahw", "النحو والإعراب · مراجعة وتراكيب", "T2", { lesson: "arabe-nahw" }),
+    ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3", { lesson: "arabe-tahlil-nas" }),
   ]),
 ]);
 
@@ -203,8 +235,8 @@ const ARABE_LETTRES = sub(
       ch("arabe-11", "الشعر الاجتماعي والسياسي في العصر الحديث", "T2"),
     ]),
     th("arabe-nathr-1", "II. النثر", [
-      ch("arabe-maqala", "المقالة الأدبية", "T1"),
-      ch("arabe-maqala-siyasiyya", "المقالة السياسية والاجتماعية", "T2"),
+      ch("arabe-maqala", "المقالة الأدبية", "T1", { lesson: "arabe-maqala" }),
+      ch("arabe-maqala-siyasiyya", "المقالة السياسية والاجتماعية", "T2", { lesson: "arabe-maqala" }),
       ch("arabe-qissa", "القصة القصيرة", "T2"),
       ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2"),
     ]),
@@ -217,7 +249,7 @@ const ARABE_LETTRES = sub(
       ch("arabe-texte-falsafi", "النص الفكري: القراءة والتحليل", "T3"),
     ]),
     th("arabe-outils", "V. اللغة والمهارات", [
-      ch("arabe-nahw", "النحو وتراكيب الجملة", "T1"),
+      ch("arabe-nahw", "النحو وتراكيب الجملة", "T1", { lesson: "arabe-nahw" }),
       ch("arabe-sarf", "الصرف والاشتقاق", "T1"),
       ch("arabe-balagha-tahlil", "البلاغة وتحليل الصورة", "T2"),
       ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3"),
@@ -229,17 +261,14 @@ const ARABE_LETTRES = sub(
 /** Français — toutes les sections (coef. 1, sauf Lettres). */
 const FRANCAIS_TC = sub("francais", "×1", [
   th("francais-roman", "Le roman", [
-    ch("francais-roman", "Le roman et ses personnages : lire et commenter", "T1", {
-      lesson: "roman-personnages",
-      quiz: "quiz-francais-roman",
-    }),
-    ch("francais-roman-analyse", "Narrateur, point de vue et construction du personnage", "T1"),
-    ch("francais-roman-theme", "Thèmes, contexte et portée d'une œuvre romanesque", "T2"),
+    ch("francais-roman", "Le roman et ses personnages : lire et commenter", "T1", { lesson: "roman-personnages", quiz: "quiz-francais-roman" }),
+    ch("francais-roman-analyse", "Narrateur, point de vue et construction du personnage", "T1", { lesson: "francais-roman-personnage" }),
+    ch("francais-roman-theme", "Thèmes, contexte et portée d'une œuvre romanesque", "T2", { lesson: "francais-roman-theme-oeuvre" }),
   ]),
   th("francais-methode", "Méthodologie et langue", [
-    ch("francais-commentaire", "Le commentaire composé : axes et rédaction", "T2"),
-    ch("francais-essai", "L'essai argumentatif : thèse, arguments, exemples", "T3"),
-    ch("francais-langue-normes", "Grammaire, conjugaison et lexique au service du sens", "T2"),
+    ch("francais-commentaire", "Le commentaire composé : axes et rédaction", "T2", { lesson: "francais-commentaire-compose" }),
+    ch("francais-essai", "L'essai argumentatif : thèse, arguments, exemples", "T3", { lesson: "francais-essai-argumentatif" }),
+    ch("francais-langue-normes", "Grammaire, conjugaison et lexique au service du sens", "T2", { lesson: "francais-langue-normes" }),
   ]),
 ]);
 
@@ -257,10 +286,10 @@ const FRANCAIS_LETTRES = sub("francais", "×2", [
     ch("francais-theatre", "Le théâtre : texte et représentation", "T2"),
   ]),
   th("francais-methode", "Méthodologie et langue", [
-    ch("francais-commentaire", "Le commentaire composé", "T2"),
-    ch("francais-dissertation", "La dissertation littéraire", "T3"),
-    ch("francais-essai", "L'essai argumentatif", "T3"),
-    ch("francais-langue-normes", "Grammaire, conjugaison et lexique", "T1"),
+    ch("francais-commentaire", "Le commentaire composé", "T2", { lesson: "francais-commentaire-compose" }),
+    ch("francais-dissertation", "La dissertation littéraire", "T3", { lesson: "francais-essai-argumentatif" }),
+    ch("francais-essai", "L'essai argumentatif", "T3", { lesson: "francais-essai-argumentatif" }),
+    ch("francais-langue-normes", "Grammaire, conjugaison et lexique", "T1", { lesson: "francais-langue-normes" }),
   ]),
 ]);
 
@@ -271,12 +300,12 @@ const ANGLAIS_TC = sub("anglais", "×1", [
       lesson: "english-tenses-writing",
       quiz: "quiz-anglais-tenses",
     }),
-    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1"),
-    ch("anglais-vocabulary", "Vocabulary building: education, science and society", "T2"),
+    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1", { lesson: "english-reading-comprehension" }),
+    ch("anglais-vocabulary", "Vocabulary building: education, science and society", "T2", { lesson: "english-vocabulary-building" }),
   ]),
   th("anglais-writing", "Writing and language", [
-    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2"),
-    ch("anglais-grammar", "Grammar and language in context", "T3"),
+    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2", { lesson: "english-writing-essay" }),
+    ch("anglais-grammar", "Grammar and language in context", "T3", { lesson: "english-grammar-context" }),
   ]),
 ]);
 
@@ -287,11 +316,11 @@ const ANGLAIS_LETTRES = sub("anglais", "×2", [
       lesson: "english-tenses-writing",
       quiz: "quiz-anglais-tenses",
     }),
-    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1"),
-    ch("anglais-vocabulary", "Vocabulary building: literature, culture and society", "T2"),
+    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1", { lesson: "english-reading-comprehension" }),
+    ch("anglais-vocabulary", "Vocabulary building: literature, culture and society", "T2", { lesson: "english-vocabulary-building" }),
   ]),
   th("anglais-writing", "Writing and language", [
-    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2"),
+    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2", { lesson: "english-writing-essay" }),
     ch("anglais-grammar", "Grammar and language in context", "T2"),
     ch("anglais-literature", "Literary texts: reading and commenting", "T3"),
   ]),
@@ -350,36 +379,36 @@ const MATHS_MAT = sub(
   "×4",
   [
     th("maths-analyse-1", "Analyse : continuité, limites, dérivation", [
-      ch("maths-continuite", "Continuité et limites : rappels et théorème des valeurs intermédiaires", "T1"),
-      ch("maths-derivation", "Dérivabilité, théorème des accroissements finis et applications", "T1"),
-      ch("maths-fonctions-reciproques", "Fonctions continues et strictement monotones · fonctions réciproques", "T1"),
+      ch("maths-continuite", "Continuité et limites : rappels et théorème des valeurs intermédiaires", "T1", { lesson: "continuite-tvi-bijection" }),
+      ch("maths-derivation", "Dérivabilité, théorème des accroissements finis et applications", "T1", { lesson: "derivabilite-taf" }),
+      ch("maths-fonctions-reciproques", "Fonctions continues et strictement monotones · fonctions réciproques", "T1", { lesson: "fonctions-reciproques" }),
       ch("maths-suites", "Suites réelles : convergence, suites récurrentes, suites adjacentes", "T1", {
         lesson: "suites-numeriques",
         quiz: "quiz-math-suites",
       }),
-      ch("maths-etude", "Étude de fonctions et représentation graphique", "T2"),
+      ch("maths-etude", "Étude de fonctions et représentation graphique", "T2", { lesson: "etude-fonctions-complete" }),
     ]),
     th("maths-integration", "Primitives, intégrales et équations différentielles", [
-      ch("maths-primitives", "Primitives d'une fonction continue", "T2"),
+      ch("maths-primitives", "Primitives d'une fonction continue", "T2", { lesson: "primitives-calcul" }),
       ch("maths-integrales", "Intégrales : calcul, intégration par parties, aire et valeur moyenne", "T2", {
         lesson: "primitives-integrales",
       }),
-      ch("maths-ln", "Fonction logarithme népérien", "T2"),
-      ch("maths-exp", "Fonction exponentielle", "T3"),
-      ch("maths-equa-diff", "Équations différentielles y' = ay + b et y'' + ω²y = 0", "T3"),
+      ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
+      ch("maths-exp", "Fonction exponentielle", "T3", { lesson: "fonction-exponentielle" }),
+      ch("maths-equa-diff", "Équations différentielles y' = ay + b et y'' + ω²y = 0", "T3", { lesson: "equations-differentielles" }),
     ]),
     th("maths-algebre", "Algèbre, arithmétique et géométrie de l'espace", [
-      ch("maths-complexes", "Nombres complexes : forme algébrique, module, argument et ensembles de points", "T2"),
-      ch("maths-equations-complexes", "Équations du second degré à coefficients complexes", "T2"),
-      ch("maths-arithmetique", "Arithmétique dans ℤ : division euclidienne, congruences, PGCD, Bézout, Gauss, Fermat", "T1"),
-      ch("maths-produit-espace", "Produit scalaire et produit vectoriel dans l'espace", "T1"),
-      ch("maths-espace", "Droites et plans de l'espace, équations cartésiennes et sphère", "T2"),
+      ch("maths-complexes", "Nombres complexes : forme algébrique, module, argument et ensembles de points", "T2", { lesson: "nombres-complexes" }),
+      ch("maths-equations-complexes", "Équations du second degré à coefficients complexes", "T2", { lesson: "equations-complexes" }),
+      ch("maths-arithmetique", "Arithmétique dans ℤ : division euclidienne, congruences, PGCD, Bézout, Gauss, Fermat", "T1", { lesson: "arithmetique-z" }),
+      ch("maths-produit-espace", "Produit scalaire et produit vectoriel dans l'espace", "T1", { lesson: "espace-droites-plans" }),
+      ch("maths-espace", "Droites et plans de l'espace, équations cartésiennes et sphère", "T2", { lesson: "espace-droites-plans" }),
     ]),
     th("maths-probas", "Probabilités et statistiques", [
-      ch("maths-probas", "Probabilités : dénombrement, probabilité conditionnelle, indépendance", "T2"),
-      ch("maths-variables", "Variables aléatoires : loi de probabilité, espérance et écart-type", "T2"),
-      ch("maths-binomiale", "Loi binomiale", "T3"),
-      ch("maths-stats", "Séries statistiques à deux caractères : ajustement affine", "T3"),
+      ch("maths-probas", "Probabilités : dénombrement, probabilité conditionnelle, indépendance", "T2", { lesson: "probabilites-conditionnelles" }),
+      ch("maths-variables", "Variables aléatoires : loi de probabilité, espérance et écart-type", "T2", { lesson: "probabilites-conditionnelles" }),
+      ch("maths-binomiale", "Loi binomiale", "T3", { lesson: "probabilites-conditionnelles" }),
+      ch("maths-stats", "Séries statistiques à deux caractères : ajustement affine", "T3", { lesson: "statistiques-deux-caracteres" }),
     ]),
   ],
   { specialty: true },
@@ -388,119 +417,119 @@ const MATHS_MAT = sub(
 /** 4ème Sciences expérimentales (coef. 3). */
 const MATHS_SCI = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-continuite", "Continuité et limites", "T1"),
-    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
     ch("maths-suites", "Suites réelles : convergence et suites récurrentes", "T1", {
       lesson: "suites-numeriques",
       quiz: "quiz-math-suites",
     }),
-    ch("maths-etude", "Étude de fonctions et représentation graphique", "T2"),
-    ch("maths-primitives", "Primitives", "T2"),
+    ch("maths-etude", "Étude de fonctions et représentation graphique", "T2", { lesson: "etude-fonctions-complete" }),
+    ch("maths-primitives", "Primitives", "T2", { lesson: "primitives-calcul" }),
   ]),
   th("maths-integration", "Intégrales et fonctions usuelles", [
     ch("maths-integrales", "Calcul intégral : intégration par parties et aires", "T2", {
       lesson: "primitives-integrales",
     }),
-    ch("maths-ln", "Fonction logarithme népérien", "T2"),
-    ch("maths-exp", "Fonction exponentielle", "T3"),
+    ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
+    ch("maths-exp", "Fonction exponentielle", "T3", { lesson: "fonction-exponentielle" }),
   ]),
   th("maths-algebre", "Algèbre et géométrie", [
-    ch("maths-complexes", "Nombres complexes et interprétation géométrique", "T2"),
-    ch("maths-espace", "Produit scalaire dans l'espace, droites, plans et sphère", "T3"),
+    ch("maths-complexes", "Nombres complexes et interprétation géométrique", "T2", { lesson: "nombres-complexes" }),
+    ch("maths-espace", "Produit scalaire dans l'espace, droites, plans et sphère", "T3", { lesson: "espace-droites-plans" }),
   ]),
   th("maths-probas", "Probabilités et statistiques", [
-    ch("maths-probas", "Probabilités conditionnelles et indépendance", "T3"),
-    ch("maths-variables", "Variables aléatoires et loi binomiale", "T3"),
-    ch("maths-stats", "Séries statistiques à deux caractères", "T3"),
+    ch("maths-probas", "Probabilités conditionnelles et indépendance", "T3", { lesson: "probabilites-conditionnelles" }),
+    ch("maths-variables", "Variables aléatoires et loi binomiale", "T3", { lesson: "probabilites-conditionnelles" }),
+    ch("maths-stats", "Séries statistiques à deux caractères", "T3", { lesson: "statistiques-deux-caracteres" }),
   ]),
 ]);
 
 /** 4ème Sciences techniques (coef. 3). */
 const MATHS_TEC = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-continuite", "Continuité et limites", "T1"),
-    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
     ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
-    ch("maths-etude", "Étude de fonctions", "T2"),
-    ch("maths-primitives", "Primitives", "T2"),
+    ch("maths-etude", "Étude de fonctions", "T2", { lesson: "etude-fonctions-complete" }),
+    ch("maths-primitives", "Primitives", "T2", { lesson: "primitives-calcul" }),
     ch("maths-integrales", "Calcul intégral : intégration par parties et aires", "T3", {
       lesson: "primitives-integrales",
     }),
-    ch("maths-ln", "Fonction logarithme népérien", "T2"),
-    ch("maths-exp", "Fonction exponentielle", "T3"),
+    ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
+    ch("maths-exp", "Fonction exponentielle", "T3", { lesson: "fonction-exponentielle" }),
   ]),
   th("maths-geometrie", "Géométrie de l'espace", [
     ch("maths-vecteurs-espace", "Calcul vectoriel : déterminant, vecteurs directeurs, points coplanaires", "T1"),
-    ch("maths-droites-plans", "Intersections de droites et de plans dans l'espace", "T2"),
-    ch("maths-produit-vectoriel", "Produit scalaire, produit vectoriel et produit mixte", "T2"),
-    ch("maths-sphere", "Équations de droites, de plans et de sphères", "T2"),
+    ch("maths-droites-plans", "Intersections de droites et de plans dans l'espace", "T2", { lesson: "espace-droites-plans" }),
+    ch("maths-produit-vectoriel", "Produit scalaire, produit vectoriel et produit mixte", "T2", { lesson: "espace-droites-plans" }),
+    ch("maths-sphere", "Équations de droites, de plans et de sphères", "T2", { lesson: "espace-droites-plans" }),
   ]),
   th("maths-probas", "Suites, probabilités et statistiques", [
     ch("maths-suites", "Suites réelles : arithmétiques, géométriques et récurrentes", "T3", {
       lesson: "suites-numeriques",
       quiz: "quiz-math-suites",
     }),
-    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2"),
-    ch("maths-stats", "Statistiques à deux caractères", "T3"),
+    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2", { lesson: "probabilites-conditionnelles" }),
+    ch("maths-stats", "Statistiques à deux caractères", "T3", { lesson: "statistiques-deux-caracteres" }),
   ]),
 ]);
 
 /** 4ème Sciences de l'informatique (coef. 3). */
 const MATHS_INF = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-continuite", "Continuité : rappels, TVI et bijection", "T1"),
-    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-continuite", "Continuité : rappels, TVI et bijection", "T1", { lesson: "continuite-tvi-bijection" }),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
     ch("maths-suites", "Suites réelles", "T1", { lesson: "suites-numeriques", quiz: "quiz-math-suites" }),
-    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T2"),
-    ch("maths-etude", "Étude de fonctions", "T2"),
-    ch("maths-primitives", "Primitives", "T2"),
-    ch("maths-ln", "Fonction logarithme népérien", "T2"),
-    ch("maths-exp", "Fonction exponentielle", "T3"),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T2", { lesson: "fonctions-reciproques" }),
+    ch("maths-etude", "Étude de fonctions", "T2", { lesson: "etude-fonctions-complete" }),
+    ch("maths-primitives", "Primitives", "T2", { lesson: "primitives-calcul" }),
+    ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
+    ch("maths-exp", "Fonction exponentielle", "T3", { lesson: "fonction-exponentielle" }),
     ch("maths-integrales", "Calcul intégral", "T3", { lesson: "primitives-integrales" }),
   ]),
   th("maths-algebre", "Algèbre et arithmétique", [
-    ch("maths-complexes", "Nombres complexes : formes algébrique et trigonométrique", "T1"),
-    ch("maths-equations-complexes", "Équations à coefficients complexes", "T1"),
-    ch("maths-arithmetique", "Arithmétique : congruences, PGCD, Bézout et systèmes", "T1"),
+    ch("maths-complexes", "Nombres complexes : formes algébrique et trigonométrique", "T1", { lesson: "nombres-complexes" }),
+    ch("maths-equations-complexes", "Équations à coefficients complexes", "T1", { lesson: "equations-complexes" }),
+    ch("maths-arithmetique", "Arithmétique : congruences, PGCD, Bézout et systèmes", "T1", { lesson: "arithmetique-z" }),
   ]),
   th("maths-probas", "Probabilités et statistiques", [
-    ch("maths-probas", "Probabilités conditionnelles", "T3"),
-    ch("maths-stats", "Statistiques à deux caractères", "T2"),
+    ch("maths-probas", "Probabilités conditionnelles", "T3", { lesson: "probabilites-conditionnelles" }),
+    ch("maths-stats", "Statistiques à deux caractères", "T2", { lesson: "statistiques-deux-caracteres" }),
   ]),
 ]);
 
 /** 4ème Économie & Gestion (coef. 2). */
 const MATHS_ECO = sub("mathematiques", "×2", [
   th("maths-analyse", "Analyse", [
-    ch("maths-continuite", "Continuité et limites", "T1"),
-    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
     ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
     ch("maths-primitives", "Primitives", "T1"),
-    ch("maths-etude", "Étude de fonctions et optimisation", "T1"),
-    ch("maths-ln", "Fonction logarithme népérien", "T2"),
+    ch("maths-etude", "Étude de fonctions et optimisation", "T1", { lesson: "etude-fonctions-complete" }),
+    ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
     ch("maths-exp", "Fonction exponentielle", "T2"),
-    ch("maths-integrales", "Calcul intégral", "T2"),
+    ch("maths-integrales", "Calcul intégral", "T2", { lesson: "primitives-integrales" }),
   ]),
   th("maths-suites-probas", "Suites, probabilités et statistiques", [
     ch("maths-suites", "Suites réelles et modélisation", "T3", { lesson: "suites-numeriques" }),
-    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2"),
-    ch("maths-graphes", "Graphes : vocabulaire, chaîne eulérienne et coloration", "T2"),
-    ch("maths-stats", "Statistiques à un et deux caractères", "T1"),
+    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2", { lesson: "probabilites-conditionnelles" }),
+    ch("maths-graphes", "Graphes : vocabulaire, chaîne eulérienne et coloration", "T2", { lesson: "graphes-euleriens" }),
+    ch("maths-stats", "Statistiques à un et deux caractères", "T1", { lesson: "statistiques-deux-caracteres" }),
   ]),
 ]);
 
 /** 4ème Sport (coef. 1). */
 const MATHS_SPO = sub("mathematiques", "×1", [
   th("maths-analyse", "Analyse", [
-    ch("maths-continuite", "Continuité et limites", "T1"),
-    ch("maths-derivation", "Dérivabilité et étude de fonctions", "T1"),
+    ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
+    ch("maths-derivation", "Dérivabilité et étude de fonctions", "T1", { lesson: "derivabilite-taf" }),
     ch("maths-primitives", "Primitives et calcul intégral", "T2"),
-    ch("maths-ln-exp", "Fonctions logarithme et exponentielle", "T2"),
+    ch("maths-ln-exp", "Fonctions logarithme et exponentielle", "T2", { lesson: "fonction-logarithme" }),
   ]),
   th("maths-stats", "Suites, statistiques et probabilités", [
     ch("maths-suites", "Suites réelles", "T3", { lesson: "suites-numeriques" }),
-    ch("maths-stats", "Statistiques à une et deux variables", "T2"),
-    ch("maths-probas", "Probabilités", "T3"),
+    ch("maths-stats", "Statistiques à une et deux variables", "T2", { lesson: "statistiques-deux-caracteres" }),
+    ch("maths-probas", "Probabilités", "T3", { lesson: "probabilites-conditionnelles" }),
   ]),
 ]);
 
@@ -518,8 +547,8 @@ const PHYSIQUE_MAT = sub(
         lesson: "dipole-rc",
         quiz: "quiz-physique-rc",
       }),
-      ch("phys-rl", "Le dipôle RL", "T1"),
-      ch("phys-rlc-libre", "Oscillations libres dans un circuit RLC", "T1"),
+      ch("phys-rl", "Le dipôle RL", "T1", { lesson: "dipole-rl" }),
+      ch("phys-rlc-libre", "Oscillations libres dans un circuit RLC", "T1", { lesson: "oscillations-rlc-libres" }),
       ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
       ch("phys-puissance", "Puissance en régime sinusoïdal et facteur de puissance", "T2"),
     ]),
@@ -538,7 +567,7 @@ const PHYSIQUE_MAT = sub(
         lesson: "noyaux-radioactivite",
         quiz: "quiz-physique-nucleaire",
       }),
-      ch("phys-decroissance", "Décroissance radioactive et datation", "T3"),
+      ch("phys-decroissance", "Décroissance radioactive et datation", "T3", { lesson: "decroissance-radioactive" }),
     ]),
     th("phys-chimie", "Chimie", [
       ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1"),
@@ -562,7 +591,7 @@ const PHYSIQUE_SCI = sub(
         lesson: "dipole-rc",
         quiz: "quiz-physique-rc",
       }),
-      ch("phys-rl", "Le dipôle RL : l'inductance et l'établissement du courant", "T1"),
+      ch("phys-rl", "Le dipôle RL : l'inductance et l'établissement du courant", "T1", { lesson: "dipole-rl" }),
       ch("phys-rlc-libre", "Oscillations électriques libres dans un circuit RLC", "T1"),
       ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
       ch("phys-puissance", "Puissance en régime sinusoïdal", "T2"),
@@ -602,8 +631,8 @@ const PHYSIQUE_TEC = sub("physique", "×3", [
       lesson: "dipole-rc",
       quiz: "quiz-physique-rc",
     }),
-    ch("phys-rl", "Le dipôle RL", "T1"),
-    ch("phys-rlc", "Oscillations libres dans un circuit RLC", "T2"),
+    ch("phys-rl", "Le dipôle RL", "T1", { lesson: "dipole-rl" }),
+    ch("phys-rlc", "Oscillations libres dans un circuit RLC", "T2", { lesson: "oscillations-rlc-libres" }),
     ch("phys-alternatif", "Courants alternatifs et puissance", "T2"),
   ]),
   th("phys-mecanique-ondes", "Mécanique et ondes", [
@@ -627,16 +656,16 @@ const PHYSIQUE_INF = sub("physique", "×2", [
       lesson: "dipole-rc",
       quiz: "quiz-physique-rc",
     }),
-    ch("phys-rl", "Le dipôle RL", "T1"),
-    ch("phys-rlc", "Oscillations libres RLC", "T2"),
-    ch("phys-ondes-meca", "Ondes mécaniques progressives", "T2"),
+    ch("phys-rl", "Le dipôle RL", "T1", { lesson: "dipole-rl" }),
+    ch("phys-rlc", "Oscillations libres RLC", "T2", { lesson: "oscillations-rlc-libres" }),
+    ch("phys-ondes-meca", "Ondes mécaniques progressives", "T2", { lesson: "ondes-mecaniques" }),
   ]),
   th("phys-nucleaire", "Physique nucléaire", [
     ch("phys-noyaux", "Noyaux, masse et énergie", "T3", {
       lesson: "noyaux-radioactivite",
       quiz: "quiz-physique-nucleaire",
     }),
-    ch("phys-decroissance", "Décroissance radioactive", "T3"),
+    ch("phys-decroissance", "Décroissance radioactive", "T3", { lesson: "decroissance-radioactive" }),
   ]),
 ]);
 
@@ -789,17 +818,14 @@ const INFO_SPECIALITE = sub(
       "info-algo",
       "Algorithmique & programmation",
       [
-        ch("info-records", "Enregistrements, vecteurs d'enregistrements et fichiers", "T1"),
-        ch("info-fichiers", "Fichiers textes et fichiers typés : création, lecture, mise à jour", "T1"),
-        ch("info-recursivite", "Récursivité : définition et applications", "T1"),
-        ch("info-tri", "Algorithmes de tri : insertion et tri Shell", "T1"),
-        ch("info-suites-recurrentes", "Algorithmes récurrents d'ordre 2 et plus", "T2", {
-          lesson: "algorithmique-python",
-          quiz: "quiz-info-python",
-        }),
-        ch("info-arithmetique", "Algorithmes d'arithmétique : PGCD récursif, divisibilité, Fibonacci, base, C(n,p)", "T2"),
-        ch("info-approximation", "Algorithmes d'approximation : point fixe, constantes, calcul d'aires", "T3"),
-        ch("info-avances", "Algorithmes avancés : tri rapide, tour de Hanoi, huit dames, voyageur de commerce", "T3"),
+        ch("info-records", "Enregistrements, vecteurs d'enregistrements et fichiers", "T1", { lesson: "enregistrements-fichiers" }),
+        ch("info-fichiers", "Fichiers textes et fichiers typés : création, lecture, mise à jour", "T1", { lesson: "info-fichiers-typed" }),
+        ch("info-recursivite", "Récursivité : définition et applications", "T1", { lesson: "recursivite" }),
+        ch("info-tri", "Algorithmes de tri : insertion et tri Shell", "T1", { lesson: "tri-insertion-shell" }),
+        ch("info-suites-recurrentes", "Algorithmes récurrents d'ordre 2 et plus", "T2", { lesson: "algorithmes-recurrents" }),
+        ch("info-arithmetique", "Algorithmes d'arithmétique : PGCD récursif, divisibilité, Fibonacci, base, C(n,p)", "T2", { lesson: "algorithmes-arithmetique" }),
+        ch("info-approximation", "Algorithmes d'approximation : point fixe, constantes, calcul d'aires", "T3", { lesson: "algorithmes-approximation" }),
+        ch("info-avances", "Algorithmes avancés : tri rapide, tour de Hanoi, huit dames, voyageur de commerce", "T3", { lesson: "algorithmes-avances" }),
       ],
       "118 h",
     ),
@@ -807,14 +833,14 @@ const INFO_SPECIALITE = sub(
       "info-bdd",
       "Bases de données",
       [
-        ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1"),
-        ch("info-mcd", "Conception : modèle conceptuel (entités-relations) et modèle logique", "T2"),
-        ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2"),
+        ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1", { lesson: "modele-relationnel" }),
+        ch("info-mcd", "Conception : modèle conceptuel (entités-relations) et modèle logique", "T2", { lesson: "conception-bdd" }),
+        ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2", { lesson: "algebre-relationnelle" }),
         ch("info-sql", "Requêtes SQL : recherche, sélection, ajout et mise à jour", "T3", {
           lesson: "bases-donnees-sql",
           quiz: "quiz-info-sql",
         }),
-        ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3"),
+        ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3", { lesson: "sql-requetes-avancees", quiz: "quiz-info-sql" }),
       ],
       "45 h",
     ),
@@ -822,12 +848,12 @@ const INFO_SPECIALITE = sub(
       "info-tic",
       "TIC · systèmes, réseaux et web",
       [
-        ch("info-collaboration", "Outils de collaboration : réseau local, forums, visioconférence", "T1"),
-        ch("info-systeme", "Systèmes d'exploitation et architecture matérielle", "T1"),
-        ch("info-reseaux", "Réseaux informatiques : topologies et services", "T2"),
-        ch("info-web", "Pages web et langages de script : données échangées à distance", "T2"),
-        ch("info-animation", "Production électronique avancée : animation et multimédia", "T3"),
-        ch("info-publication", "Publication de sites web : hébergement, référencement, sécurisation", "T3"),
+        ch("info-collaboration", "Outils de collaboration : réseau local, forums, visioconférence", "T1", { lesson: "tic-collaboration-systemes" }),
+        ch("info-systeme", "Systèmes d'exploitation et architecture matérielle", "T1", { lesson: "info-systemes-exploitation" }),
+        ch("info-reseaux", "Réseaux informatiques : topologies et services", "T2", { lesson: "info-reseaux" }),
+        ch("info-web", "Pages web et langages de script : données échangées à distance", "T2", { lesson: "web-dynamique-publication" }),
+        ch("info-animation", "Production électronique avancée : animation et multimédia", "T3", { lesson: "web-dynamique-publication" }),
+        ch("info-publication", "Publication de sites web : hébergement, référencement, sécurisation", "T3", { lesson: "web-dynamique-publication" }),
       ],
       "50 h",
     ),

@@ -682,4 +682,174 @@ export const examsSeed: ExamSeed[] = [
       "الربط بين الشاهد والفكرة أهم من حفظ الشواهد.",
     ],
   },
+  {
+    slug: "bac-francais-session",
+    title: "Épreuve de français — commentaire, dissertation et langue",
+    subjectSlug: "francais",
+    section: "Toutes sections",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Un corpus de trois exercices avec corrigé guidé : commentaire composé d'un texte romanesque, sujet de dissertation et exercices de langue.",
+    parts: [
+      {
+        title: "Exercice 1 — Commentaire composé (20 points)",
+        intro:
+          "Extrait : la première entrée du personnage dans la ville. Le narrateur décrit les ruelles, l'odeur du pain et la foule qui l'évite ; la phrase finale est nominale, comme suspendue.",
+        questions: [
+          {
+            prompt: "Proposez un projet de lecture en une phrase.",
+            method: "Réunir les impressions dominantes du texte (étrangeté, exclusion) et formuler ce que le passage démontre.",
+            answer:
+              "Le passage fait de l'arrivée du personnage une expérience d'exclusion : la ville se donne à voir comme un espace étranger où le héros cherche sa place.",
+            points: 6,
+          },
+          {
+            prompt: "Dégagez deux axes de lecture appuyés sur des citations.",
+            method: "Un axe par effet dominant : la description sensorielle, puis le regard des autres.",
+            answer:
+              "Axe 1 : une ville sensorielle et oppressante (champ lexical des odeurs, phrases courtes, accumulation). Axe 2 : le regard social qui exclut (verbes de mouvement des passants, pronoms indéfinis, silence du personnage).",
+            points: 8,
+          },
+          {
+            prompt: "Quel effet produit la phrase nominale finale ?",
+            method: "Nommer la figure de construction, puis interpréter.",
+            answer:
+              "La phrase nominale suspend le récit et laisse le lecteur sur une impression d'inachèvement : le personnage reste en suspens, comme sa place dans la ville.",
+            points: 6,
+          },
+        ],
+      },
+      {
+        title: "Exercice 2 — Dissertation (20 points)",
+        intro: "« Le roman n'a-t-il pour fonction que de divertir ? »",
+        questions: [
+          {
+            prompt: "Dégagez la problématique.",
+            method: "Distinguer le divertissement (évasion) de la fonction critique et cognitive du roman.",
+            answer:
+              "Le sujet oppose une conception du roman comme pur divertissement à une conception où il instruit, critique et fait réfléchir. Problème : le plaisir du récit est-il incompatible avec sa portée sérieuse ?",
+            points: 10,
+          },
+          {
+            prompt: "Proposez un plan en trois parties.",
+            method: "Thèse, antithèse, dépassement.",
+            answer:
+              "I. Le roman divertit : intrigue, suspense, évasion. II. Mais il instruit : peinture sociale, dénonciation, formation du jugement. III. Le plaisir est le moyen de la réflexion : c'est parce qu'il attache le lecteur que le roman peut le faire penser.",
+            points: 10,
+          },
+        ],
+      },
+      {
+        title: "Exercice 3 — Langue (10 points)",
+        questions: [
+          {
+            prompt: "Accordez : « Les lettres qu'il a (écrire) sont longues. »",
+            method: "Auxiliaire avoir + COD placé avant : accord avec le COD.",
+            answer: "écrites — le COD « qu' » (les lettres) précède l'auxiliaire.",
+            points: 5,
+          },
+          {
+            prompt: "Justifiez l'emploi du passé simple dans un récit au passé.",
+            method: "Distinguer premier plan et arrière-plan.",
+            answer:
+              "Le passé simple marque les actions de premier plan, qui font avancer le récit, tandis que l'imparfait installe le décor et les habitudes.",
+            points: 5,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Le plan se rédige avant l'introduction : c'est lui qui garantit la cohérence.",
+      "Chaque citation doit être introduite, puis interprétée.",
+      "Gardez trente minutes pour la relecture ciblée (verbes, homophones, ponctuation).",
+    ],
+    correctionNotes: [
+      "Un axe thématique sans citation est une simple impression.",
+      "La dissertation doit répondre au sujet posé, pas réciter un cours sur le roman.",
+      "En langue, l'accord sans justification ne rapporte que la moitié des points.",
+    ],
+  },
+  {
+    slug: "bac-anglais-session",
+    title: "English paper — reading comprehension, language and writing",
+    subjectSlug: "anglais",
+    section: "Toutes sections",
+    kind: "session",
+    year: 2024,
+    durationMin: 120,
+    difficulty: 2,
+    description:
+      "A complete mock paper with a short text on distance learning, comprehension questions, language tasks and a guided writing task.",
+    parts: [
+      {
+        title: "Part 1 — Reading comprehension (12 points)",
+        intro:
+          "Text: a short article explaining how online courses changed access to education in rural areas, with figures and one student interview.",
+        questions: [
+          {
+            prompt: "What is the main idea of the text?",
+            method: "Answer with one sentence, in your own words.",
+            answer:
+              "Online courses give students in remote areas access to education they could not otherwise attend.",
+            points: 4,
+          },
+          {
+            prompt: "What does 'it' refer to in the sentence: 'It saves them hours of travel'?",
+            method: "Look back one sentence for the antecedent.",
+            answer: "It refers to online learning (or attending classes online).",
+            points: 4,
+          },
+          {
+            prompt: "Is the writer optimistic or critical? Justify.",
+            method: "Quote one phrase that reveals the tone.",
+            answer:
+              "Optimistic: the writer insists on 'new opportunities' and on the student's success, with only one reservation about the internet connection.",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Part 2 — Language (8 points)",
+        questions: [
+          {
+            prompt: "Put the verb in the right tense: 'Since 2020, she (study) online.'",
+            method: "Since + starting point = present perfect.",
+            answer: "has studied",
+            points: 4,
+          },
+          {
+            prompt: "Rewrite in the passive voice: 'The government has built new schools.'",
+            method: "Object becomes subject, past participle, agent optional.",
+            answer: "New schools have been built (by the government).",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Part 3 — Writing (10 points)",
+        questions: [
+          {
+            prompt: "Write about 120 words: 'Should students be allowed to use phones at school?'",
+            method: "Introduction with your position, two arguments with examples, short conclusion.",
+            answer:
+              "Model answer structure: introduction stating a balanced position, one paragraph on the benefits (access to information, safety), one on the drawbacks (distraction, inequality), conclusion proposing a controlled use during breaks only.",
+            points: 10,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Never copy a full sentence from the text in the comprehension part.",
+      "Check the third person -s and the irregular past forms during the last five minutes.",
+      "Count your words roughly: about twelve lines of ten words.",
+    ],
+    correctionNotes: [
+      "Reformulation is required; copying earns no marks.",
+      "In the passive, the past participle is the most frequent error.",
+      "A clearly structured essay scores higher than a rich but disorganised one.",
+    ],
+  },
 ];
