@@ -682,4 +682,499 @@ export const examsSeed: ExamSeed[] = [
       "الربط بين الشاهد والفكرة أهم من حفظ الشواهد.",
     ],
   },
+  {
+    slug: "bac-francais-session",
+    title: "Épreuve de français — commentaire, dissertation et langue",
+    subjectSlug: "francais",
+    section: "Toutes sections",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Un corpus de trois exercices avec corrigé guidé : commentaire composé d'un texte romanesque, sujet de dissertation et exercices de langue.",
+    parts: [
+      {
+        title: "Exercice 1 — Commentaire composé (20 points)",
+        intro:
+          "Extrait : la première entrée du personnage dans la ville. Le narrateur décrit les ruelles, l'odeur du pain et la foule qui l'évite ; la phrase finale est nominale, comme suspendue.",
+        questions: [
+          {
+            prompt: "Proposez un projet de lecture en une phrase.",
+            method: "Réunir les impressions dominantes du texte (étrangeté, exclusion) et formuler ce que le passage démontre.",
+            answer:
+              "Le passage fait de l'arrivée du personnage une expérience d'exclusion : la ville se donne à voir comme un espace étranger où le héros cherche sa place.",
+            points: 6,
+          },
+          {
+            prompt: "Dégagez deux axes de lecture appuyés sur des citations.",
+            method: "Un axe par effet dominant : la description sensorielle, puis le regard des autres.",
+            answer:
+              "Axe 1 : une ville sensorielle et oppressante (champ lexical des odeurs, phrases courtes, accumulation). Axe 2 : le regard social qui exclut (verbes de mouvement des passants, pronoms indéfinis, silence du personnage).",
+            points: 8,
+          },
+          {
+            prompt: "Quel effet produit la phrase nominale finale ?",
+            method: "Nommer la figure de construction, puis interpréter.",
+            answer:
+              "La phrase nominale suspend le récit et laisse le lecteur sur une impression d'inachèvement : le personnage reste en suspens, comme sa place dans la ville.",
+            points: 6,
+          },
+        ],
+      },
+      {
+        title: "Exercice 2 — Dissertation (20 points)",
+        intro: "« Le roman n'a-t-il pour fonction que de divertir ? »",
+        questions: [
+          {
+            prompt: "Dégagez la problématique.",
+            method: "Distinguer le divertissement (évasion) de la fonction critique et cognitive du roman.",
+            answer:
+              "Le sujet oppose une conception du roman comme pur divertissement à une conception où il instruit, critique et fait réfléchir. Problème : le plaisir du récit est-il incompatible avec sa portée sérieuse ?",
+            points: 10,
+          },
+          {
+            prompt: "Proposez un plan en trois parties.",
+            method: "Thèse, antithèse, dépassement.",
+            answer:
+              "I. Le roman divertit : intrigue, suspense, évasion. II. Mais il instruit : peinture sociale, dénonciation, formation du jugement. III. Le plaisir est le moyen de la réflexion : c'est parce qu'il attache le lecteur que le roman peut le faire penser.",
+            points: 10,
+          },
+        ],
+      },
+      {
+        title: "Exercice 3 — Langue (10 points)",
+        questions: [
+          {
+            prompt: "Accordez : « Les lettres qu'il a (écrire) sont longues. »",
+            method: "Auxiliaire avoir + COD placé avant : accord avec le COD.",
+            answer: "écrites — le COD « qu' » (les lettres) précède l'auxiliaire.",
+            points: 5,
+          },
+          {
+            prompt: "Justifiez l'emploi du passé simple dans un récit au passé.",
+            method: "Distinguer premier plan et arrière-plan.",
+            answer:
+              "Le passé simple marque les actions de premier plan, qui font avancer le récit, tandis que l'imparfait installe le décor et les habitudes.",
+            points: 5,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Le plan se rédige avant l'introduction : c'est lui qui garantit la cohérence.",
+      "Chaque citation doit être introduite, puis interprétée.",
+      "Gardez trente minutes pour la relecture ciblée (verbes, homophones, ponctuation).",
+    ],
+    correctionNotes: [
+      "Un axe thématique sans citation est une simple impression.",
+      "La dissertation doit répondre au sujet posé, pas réciter un cours sur le roman.",
+      "En langue, l'accord sans justification ne rapporte que la moitié des points.",
+    ],
+  },
+  {
+    slug: "bac-anglais-session",
+    title: "English paper — reading comprehension, language and writing",
+    subjectSlug: "anglais",
+    section: "Toutes sections",
+    kind: "session",
+    year: 2024,
+    durationMin: 120,
+    difficulty: 2,
+    description:
+      "A complete mock paper with a short text on distance learning, comprehension questions, language tasks and a guided writing task.",
+    parts: [
+      {
+        title: "Part 1 — Reading comprehension (12 points)",
+        intro:
+          "Text: a short article explaining how online courses changed access to education in rural areas, with figures and one student interview.",
+        questions: [
+          {
+            prompt: "What is the main idea of the text?",
+            method: "Answer with one sentence, in your own words.",
+            answer:
+              "Online courses give students in remote areas access to education they could not otherwise attend.",
+            points: 4,
+          },
+          {
+            prompt: "What does 'it' refer to in the sentence: 'It saves them hours of travel'?",
+            method: "Look back one sentence for the antecedent.",
+            answer: "It refers to online learning (or attending classes online).",
+            points: 4,
+          },
+          {
+            prompt: "Is the writer optimistic or critical? Justify.",
+            method: "Quote one phrase that reveals the tone.",
+            answer:
+              "Optimistic: the writer insists on 'new opportunities' and on the student's success, with only one reservation about the internet connection.",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Part 2 — Language (8 points)",
+        questions: [
+          {
+            prompt: "Put the verb in the right tense: 'Since 2020, she (study) online.'",
+            method: "Since + starting point = present perfect.",
+            answer: "has studied",
+            points: 4,
+          },
+          {
+            prompt: "Rewrite in the passive voice: 'The government has built new schools.'",
+            method: "Object becomes subject, past participle, agent optional.",
+            answer: "New schools have been built (by the government).",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Part 3 — Writing (10 points)",
+        questions: [
+          {
+            prompt: "Write about 120 words: 'Should students be allowed to use phones at school?'",
+            method: "Introduction with your position, two arguments with examples, short conclusion.",
+            answer:
+              "Model answer structure: introduction stating a balanced position, one paragraph on the benefits (access to information, safety), one on the drawbacks (distraction, inequality), conclusion proposing a controlled use during breaks only.",
+            points: 10,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Never copy a full sentence from the text in the comprehension part.",
+      "Check the third person -s and the irregular past forms during the last five minutes.",
+      "Count your words roughly: about twelve lines of ten words.",
+    ],
+    correctionNotes: [
+      "Reformulation is required; copying earns no marks.",
+      "In the passive, the past participle is the most frequent error.",
+      "A clearly structured essay scores higher than a rich but disorganised one.",
+    ],
+  },
+  {
+    slug: "bac-TECHNOLOGIE-session",
+    title: "Épreuve de technologie — électronique, automatismes et électrotechnique",
+    subjectSlug: "technologie",
+    section: "Sciences techniques",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve complète de technologie avec corrigé : logique combinatoire, GRAFCET, moteur asynchrone et résistance des matériaux.",
+    parts: [
+      {
+        title: "Partie A — Électronique numérique (7 points)",
+        questions: [
+          {
+            prompt: "Simplifier la fonction S = a·b̄ + a·b.",
+            method: "Factoriser par a, puis utiliser b̄ + b = 1.",
+            answer: "S = a·(b̄ + b) = a. La variable b est éliminée : le circuit ne dépend plus que de a.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie B — Automatismes (7 points)",
+        questions: [
+          {
+            prompt: "Dans un GRAFCET, à quelle condition la transition entre les étapes 3 et 4 est-elle franchie ?",
+            method: "Énoncer la règle d'évolution : transition valide ET condition vraie.",
+            answer:
+              "L'étape 3 doit être active et la condition associée à la transition doit être vraie ; alors l'étape 3 est désactivée et l'étape 4 activée simultanément.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie C — Électrotechnique (6 points)",
+        questions: [
+          {
+            prompt: "Un moteur tétrapolaire alimenté en 50 Hz tourne à 1440 tr/min. Calculer son glissement.",
+            method: "Calculer d'abord ns = 60f/p, puis g = (ns − n)/ns.",
+            answer: "ns = 60 × 50/2 = 1500 tr/min ; g = (1500 − 1440)/1500 = 0,04 soit 4 %.",
+            points: 6,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Écrire la formule littérale avant tout calcul.",
+      "Vérifier les unités : tr/min, rad/s, N, mm², MPa.",
+      "Conclure chaque calcul par une phrase de réponse.",
+    ],
+    correctionNotes: [
+      "Une simplification sans justification (table de Karnaugh ou algèbre de Boole) n'est que partiellement créditée.",
+      "Le glissement s'exprime en % mais se calcule sans unité.",
+      "Un résultat numérique sans unité est systématiquement pénalisé.",
+    ],
+  },
+  {
+    slug: "bac-gestion-session",
+    title: "Épreuve de gestion — comptabilité, coûts et analyse financière",
+    subjectSlug: "gestion",
+    section: "Économie & Gestion",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve complète de gestion avec corrigé : écritures de régularisation, seuil de rentabilité et calcul de trésorerie nette.",
+    parts: [
+      {
+        title: "Partie 1 — Comptabilité générale (8 points)",
+        intro:
+          "L'entreprise a payé en décembre un loyer de 3 600 dt couvrant les trois premiers mois de l'année suivante.",
+        questions: [
+          {
+            prompt: "Quelle écriture de régularisation faut-il passer au 31 décembre ?",
+            method: "Isoler la part qui concerne l'exercice suivant et la sortir des charges.",
+            answer:
+              "On constate une charge constatée d'avance de 2 400 dt (deux mois sur trois) : on crédite le compte de charges de 2 400 dt et on débite le compte de charges constatées d'avance du même montant.",
+            points: 8,
+          },
+        ],
+      },
+      {
+        title: "Partie 2 — Comptabilité analytique (7 points)",
+        intro:
+          "Chiffre d'affaires : 500 000 dt. Charges variables : 300 000 dt. Charges fixes : 150 000 dt.",
+        questions: [
+          {
+            prompt: "Calculer le seuil de rentabilité et l'exprimer en mois.",
+            method: "MCA = CA − CV ; taux = MCA/CA ; SR = CF/taux ; point mort = SR/CA × 12.",
+            answer:
+              "MCA = 200 000 dt, taux = 40 %, SR = 150 000/0,40 = 375 000 dt, point mort = 375 000/500 000 × 12 = 9 mois.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie 3 — Analyse financière (5 points)",
+        intro: "Ressources stables : 900 000 dt. Emplois stables : 750 000 dt. BFR : 200 000 dt.",
+        questions: [
+          {
+            prompt: "Calculer le fonds de roulement et la trésorerie nette, puis commenter.",
+            method: "FR = ressources stables − emplois stables ; TN = FR − BFR.",
+            answer:
+              "FR = 150 000 dt ; TN = 150 000 − 200 000 = −50 000 dt. La trésorerie est négative : le cycle d'exploitation consomme plus que le fonds de roulement ne le permet, ce qui crée un risque de tension de liquidité.",
+            points: 5,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Poser les formules avant les calculs.",
+      "Vérifier les unités et les signes des écarts.",
+      "Commenter chaque résultat chiffré en une phrase.",
+    ],
+    correctionNotes: [
+      "Une charge constatée d'avance se calcule au prorata des mois restants.",
+      "Le seuil de rentabilité s'exprime en dinars de chiffre d'affaires.",
+      "Une trésorerie nette négative n'invalide pas la rentabilité : elle signale un besoin de financement du cycle.",
+    ],
+  },
+  {
+    slug: "bac-histoire-geo-session",
+    title: "Épreuve d'histoire-géographie — documents et croquis",
+    subjectSlug: "histoire-geographie",
+    section: "Économie & Gestion · Lettres",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve d'histoire-géographie avec corrigé : analyse d'un document sur l'économie coloniale et croquis de l'organisation du territoire tunisien.",
+    parts: [
+      {
+        title: "Partie A — Histoire (10 points)",
+        intro:
+          "Document : tableau statistique des exportations tunisiennes en 1938 (phosphates, huile d'olive, céréales) et des importations (produits manufacturés).",
+        questions: [
+          {
+            prompt: "Présentez le document.",
+            method: "Nature, source, date, thème, espace concerné.",
+            answer:
+              "Tableau statistique publié par l'administration du protectorat en 1938, présentant la structure des échanges extérieurs de la Tunisie : matières premières exportées, produits manufacturés importés.",
+            points: 4,
+          },
+          {
+            prompt: "Que révèle ce document de la structure de l'économie coloniale ?",
+            method: "Décrire, puis interpréter avec la notion d'économie extravertie.",
+            answer:
+              "La Tunisie exporte des produits bruts et importe des produits finis : c'est une économie extravertie et déséquilibrée, dont la valeur ajoutée est réalisée hors du territoire. Cette structure crée une dépendance et alimente le mécontentement social.",
+            points: 6,
+          },
+        ],
+      },
+      {
+        title: "Partie B — Géographie (10 points)",
+        questions: [
+          {
+            prompt: "Réalisez un croquis de l'organisation du territoire tunisien.",
+            method: "Trois idées : poids du littoral, métropoles, espaces intérieurs et leurs dynamiques.",
+            answer:
+              "Légende en trois parties : 1) un littoral densément peuplé et industrialisé (aplats) ; 2) deux métropoles majeures, Tunis et Sfax, et des villes relais (figurés ponctuels) ; 3) des espaces intérieurs moins denses, spécialisés (agriculture, élevage, mines) et reliés par des axes de communication. Titre obligatoire : « L'organisation du territoire tunisien ».",
+            points: 10,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Présenter tout document avant de l'analyser.",
+      "Rédiger la légende du croquis avant de dessiner.",
+      "Conclure chaque partie par une phrase de synthèse.",
+    ],
+    correctionNotes: [
+      "La présentation complète du document vaut à elle seule plusieurs points.",
+      "Un croquis sans titre ni légende structurée perd l'essentiel des points.",
+      "L'analyse doit relier les données à un mécanisme économique ou politique.",
+    ],
+  },
+  {
+    slug: "bac-education-islamique-session",
+    title: "اختبار التربية الإسلامية — مقاصد وقيم",
+    subjectSlug: "education-islamique",
+    section: "Lettres",
+    kind: "session",
+    year: 2024,
+    durationMin: 90,
+    difficulty: 3,
+    description:
+      "موضوع كامل مع الإصلاح: نص قرآني وحديث في مقاصد الشريعة والقيم، وأسئلة تحليل ومقال.",
+    parts: [
+      {
+        title: "الجزء الأول — تحليل النص (10 نقاط)",
+        intro:
+          "قال تعالى: «يا أيها الناس إنا خلقناكم من ذكر وأنثى وجعلناكم شعوباً وقبائل لتعارفوا إن أكرمكم عند الله أتقاكم» (الحجرات: 13). وقال رسول الله ﷺ: «من غشنا فليس منا».",
+        questions: [
+          {
+            prompt: "اشرح المفردات: «شعوباً»، «قبائل»، «أتقاكم»، واستخرج من النص قيمة مركزية.",
+            method: "شرح لغوي موجز ثم تحديد القيمة بدقة.",
+            answer:
+              "«شعوباً» جماعات كبرى، و«قبائل» جماعات أصغر تتفرع عنها، و«أتقاكم» أكثركم تقوى. القيمة المركزية: المساواة بين الناس ومعيار التفاضل التقوى والتعارف، لا العرق ولا النسب.",
+            points: 4,
+          },
+          {
+            prompt: "بيّن كيف يؤسس النص لحوار الحضارات والتسامح.",
+            method: "ربط الغاية «لتعارفوا» بمنهج الحوار والاعتراف بالاختلاف.",
+            answer:
+              "الآية تجعل الاختلاف بين الشعوب سنة إلهية وغايته التعارف لا التنازع، فتُلزم المسلم بمعرفة الآخر والاعتراف بحقه في الاختلاف. والحديث يعمّم قيمة النزاهة في التعامل، وهي شرط الثقة بين الأفراد والجماعات.",
+            points: 6,
+          },
+        ],
+      },
+      {
+        title: "الجزء الثاني — مقال (10 نقاط)",
+        intro: "",
+        questions: [
+          {
+            prompt:
+              "قال المصلحون: «الشريعة مبناها على جلب المصالح ودرء المفاسد». حلّل هذا القول وبيّن أثره في معالجة قضية معاصرة من اختيارك.",
+            method:
+              "مقدمة تعريف المقاصد، ثم عرض الضرورات الخمس، ثم تطبيق على قضية، ثم خاتمة تركيبية.",
+            answer:
+              "المقاصد هي الغايات التي قصدها الشارع من الأحكام، وتُجمع في حفظ الدين والنفس والعقل والنسل والمال، وترتيبها يحدد الأولوية عند التعارض. تطبيقاً على البيئة: حفظ النفس يقتضي حماية الهواء والماء من التلوث، وهي مفسدة تُدرأ قبل أي منفعة اقتصادية. تطبيقاً على الذكاء الاصطناعي: حفظ العقل والمال يقتضي ضبط الاستخدام ومنع الغش والتضليل، مع تشجيع البحث العلمي. الخاتمة: الاجتهاد المقاصدي يوازن بين النص والواقع بعيداً عن الغلو والتسيب.",
+            points: 10,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "ابدأ بتعريف المفاهيم قبل الاستشهاد.",
+      "لا تكتف بالآية دون شرح دلالتها.",
+      "في المقال: مقدمة، عرض، خاتمة تركيبية.",
+    ],
+    correctionNotes: [
+      "الاستشهاد دون شرح لا يُحتسب كاملاً.",
+      "الخطاب الوعظي الخالي من التحليل يفقد أكثر العلامة.",
+      "الربط بين المقاصد وقضية معاصرة هو جوهر الجزء الثاني.",
+    ],
+  },
+  {
+    slug: "bac-education-physique-session",
+    title: "Épreuve d'éducation physique — partie théorique et analyse de séance",
+    subjectSlug: "education-physique",
+    section: "Sport",
+    kind: "session",
+    year: 2024,
+    durationMin: 120,
+    difficulty: 3,
+    description:
+      "Sujet type bac Sport avec corrigé : physiologie de l'effort, biomécanique d'un geste et construction d'une séance d'entraînement.",
+    parts: [
+      {
+        title: "Exercice 1 — Physiologie de l'effort (7 points)",
+        intro:
+          "Un joueur de 17 ans dispute un match de football de 90 minutes. On relève sa fréquence cardiaque : 70 bpm au repos, 190 bpm lors d'un sprint.",
+        questions: [
+          {
+            prompt: "Estimer sa fréquence cardiaque maximale et situer son sprint sur le continuum énergétique.",
+            method: "Utiliser FC max ≈ 220 − âge, puis comparer la durée de l'effort aux trois filières.",
+            answer:
+              "FC max ≈ 220 − 17 = 203 bpm. Le sprint (quelques secondes) relève de la filière anaérobie alactique, relayée par la glycolyse pendant l'effort intense ; les phases de course modérée du match sollicitent la filière aérobie.",
+            points: 3,
+          },
+          {
+            prompt: "Expliquer deux adaptations de l'entraînement aérobie sur le plan cardio-respiratoire.",
+            method: "Citer une adaptation centrale (cœur) et une adaptation périphérique (muscle ou capillaires).",
+            answer:
+              "Au niveau central : augmentation du volume d'éjection systolique et bradycardie de repos, donc meilleur débit pour un coût cardiaque moindre. Au niveau périphérique : augmentation de la densité capillaire et du volume mitochondrial, ce qui améliore l'extraction de l'oxygène et retarde le recours à la glycolyse.",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Exercice 2 — Biomécanique (6 points)",
+        intro: "Analyse du tir au but : appui, armé du membre inférieur, frappe, accompagnement.",
+        questions: [
+          {
+            prompt: "Identifier le type de levier du genou lors de l'extension et justifier.",
+            method: "Repérer le point d'appui (articulation), la force (quadriceps) et la résistance (poids du segment).",
+            answer:
+              "Le genou fonctionne comme un levier de 3e genre : la force motrice du quadriceps s'applique entre le point d'appui (l'articulation) et la résistance (le poids du segment jambier). Le bras de levier est faible, mais la vitesse angulaire obtenue en fin d'extension est élevée, ce qui favorise la vitesse du ballon.",
+            points: 3,
+          },
+          {
+            prompt: "Proposer deux corrections techniques justifiées par la mécanique.",
+            method: "Relier chaque correction à une notion : base de sustentation, transfert de poids, bras de levier.",
+            answer:
+              "1) Élargir légèrement la base de sustentation et fléchir le genou d'appui pour abaisser le centre de gravité et stabiliser la frappe. 2) Accompagner le geste après le contact pour allonger le temps d'application de la force et augmenter la vitesse transmise au ballon.",
+            points: 3,
+          },
+        ],
+      },
+      {
+        title: "Exercice 3 — Pédagogie et prévention (7 points)",
+        intro: "Vous devez préparer une séance de 60 minutes pour un groupe de 16 élèves de niveau hétérogène.",
+        questions: [
+          {
+            prompt: "Construire le plan de la séance avec objectifs et critères de réussite.",
+            method: "Respecter les trois temps, formuler un objectif opérationnel mesurable.",
+            answer:
+              "Mise en train (10 min) : échauffement général puis spécifique. Corps de séance (40 min) : situation de référence, puis situation d'apprentissage sur l'obstacle visé, avec différenciation par la taille du terrain. Retour au calme (10 min) : étirements, bilan. Objectif opérationnel : réussir 8 passes sur 10 en mouvement avec un défenseur passif. Critère de réussite : 8/10 sur deux essais.",
+            points: 4,
+          },
+          {
+            prompt: "Citer trois mesures de prévention des blessures et expliquer la conduite à tenir devant une entorse.",
+            method: "Associer prévention (avant) et premiers gestes (après).",
+            answer:
+              "Prévention : échauffement complet, progressivité de la charge, matériel et terrain vérifiés. Devant une entorse : arrêt de l'activité, glace 15–20 minutes, compression, surélévation (RICE), puis avis médical avant reprise.",
+            points: 3,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Toujours nommer l'articulation, la force et le levier en biomécanique.",
+      "Appuyer chaque affirmation physiologique sur une valeur chiffrée.",
+      "Formuler les objectifs en comportement observable et mesurable.",
+    ],
+    correctionNotes: [
+      "Les valeurs de référence (FC max, zones, filières) sont attendues explicitement.",
+      "Une séance sans les trois temps ni critère de réussite perd la moitié des points.",
+      "La prévention doit être distinguée de la conduite à tenir.",
+    ],
+  },
 ];
