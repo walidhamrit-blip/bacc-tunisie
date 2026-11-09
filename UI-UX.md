@@ -30,7 +30,8 @@ Les 15 rubriques et toutes les pages de détail restent accessibles.
    monochromes, titres de page courts + une seule phrase d'explication, espacements plus généreux.
 5. **Accessibilité.** Focus visible sur tous les contrôles, menu fermable par `Échap` ou clic extérieur,
    verrouillage du scroll quand le menu est ouvert, `aria-current` sur la page active,
-   animation désactivée avec `prefers-reduced-motion`. Le mode sombre est conservé.
+   animation désactivée avec `prefers-reduced-motion`, réglage de la taille de police (`A−` / `A+` jusqu'à 145 %)
+   dans la barre supérieure pour les élèves à faible vision. Le mode sombre est conservé.
 
 ## Où trouver chaque chose
 
