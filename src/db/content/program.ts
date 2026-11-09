@@ -96,6 +96,7 @@ const MEMENTO: Record<string, string> = {
   francais: "memento-francais",
   anglais: "memento-anglais",
   informatique: "memento-informatique",
+  svt: "memento-svt",
 };
 
 /**
@@ -333,17 +334,17 @@ const INFO_TC = sub("informatique", "×1", [
       lesson: "algorithmique-python",
       quiz: "quiz-info-python",
     }),
-    ch("info-modules", "Sous-programmes et analyse modulaire", "T1"),
-    ch("info-tri-recherche", "Algorithmes de tri et de recherche", "T2"),
+    ch("info-modules", "Sous-programmes et analyse modulaire", "T1", { lesson: "sous-programmes-modularite" }),
+    ch("info-tri-recherche", "Algorithmes de tri et de recherche", "T2", { lesson: "tri-recherche-tableau" }),
   ]),
   th("info-donnees", "Données et tableur", [
     ch("info-tableur", "Tableur : formules, fonctions et graphiques", "T1", {
       lesson: "tableur-formules-graphiques",
     }),
-    ch("info-bdd", "Bases de données et requêtes : recherche, sélection, ajout, mise à jour", "T2"),
+    ch("info-bdd", "Bases de données et requêtes : recherche, sélection, ajout, mise à jour", "T2", { lesson: "bdd-requetes-simples" }),
   ]),
   th("info-citoyennete", "Culture numérique", [
-    ch("info-web", "Recherche, sécurité et identité numérique", "T3"),
+    ch("info-web", "Recherche, sécurité et identité numérique", "T3", { lesson: "web-securite-identite" }),
   ]),
 ]);
 
@@ -549,18 +550,18 @@ const PHYSIQUE_MAT = sub(
       }),
       ch("phys-rl", "Le dipôle RL", "T1", { lesson: "dipole-rl" }),
       ch("phys-rlc-libre", "Oscillations libres dans un circuit RLC", "T1", { lesson: "oscillations-rlc-libres" }),
-      ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
-      ch("phys-puissance", "Puissance en régime sinusoïdal et facteur de puissance", "T2"),
+      ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2", { lesson: "oscillations-forcees-resonance" }),
+      ch("phys-puissance", "Puissance en régime sinusoïdal et facteur de puissance", "T2", { lesson: "puissance-sinusoidal" }),
     ]),
     th("phys-mecanique", "Évolution des systèmes mécaniques", [
-      ch("phys-pendule", "Le pendule élastique : oscillations mécaniques", "T2"),
-      ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2"),
-      ch("phys-rotation", "Mouvement de rotation d'un solide autour d'un axe fixe", "T2"),
+      ch("phys-pendule", "Le pendule élastique : oscillations mécaniques", "T2", { lesson: "pendule-elastique" }),
+      ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2", { lesson: "energie-mecanique-amortissement" }),
+      ch("phys-rotation", "Mouvement de rotation d'un solide autour d'un axe fixe", "T2", { lesson: "rotation-axe-fixe" }),
     ]),
     th("phys-ondes", "Les ondes", [
-      ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2"),
-      ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3"),
-      ch("phys-diffraction", "Diffraction de la lumière", "T3"),
+      ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2", { lesson: "ondes-mecaniques-periodiques" }),
+      ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3", { lesson: "ondes-electromagnetiques" }),
+      ch("phys-diffraction", "Diffraction de la lumière", "T3", { lesson: "diffraction-lumiere" }),
     ]),
     th("phys-nucleaire", "Physique nucléaire", [
       ch("phys-noyaux", "Noyaux, masse et énergie", "T3", {
@@ -570,12 +571,12 @@ const PHYSIQUE_MAT = sub(
       ch("phys-decroissance", "Décroissance radioactive et datation", "T3", { lesson: "decroissance-radioactive" }),
     ]),
     th("phys-chimie", "Chimie", [
-      ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1"),
-      ch("phys-vitesse", "Vitesse de réaction et facteurs cinétiques", "T1"),
-      ch("phys-action-masse", "Loi d'action de masse et équilibre chimique", "T1"),
-      ch("phys-acides-bases", "Réactions acide-base et dosage", "T2"),
-      ch("phys-oxydoreduction", "Oxydoréduction et piles électrochimiques", "T3"),
-      ch("phys-electrolyse", "Électrolyse et applications industrielles", "T3"),
+      ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1", { lesson: "avancement-reaction" }),
+      ch("phys-vitesse", "Vitesse de réaction et facteurs cinétiques", "T1", { lesson: "vitesse-reaction" }),
+      ch("phys-action-masse", "Loi d'action de masse et équilibre chimique", "T1", { lesson: "equilibre-action-masse" }),
+      ch("phys-acides-bases", "Réactions acide-base et dosage", "T2", { lesson: "acides-bases-dosage" }),
+      ch("phys-oxydoreduction", "Oxydoréduction et piles électrochimiques", "T3", { lesson: "oxydoreduction-piles" }),
+      ch("phys-electrolyse", "Électrolyse et applications industrielles", "T3", { lesson: "electrolyse" }),
     ]),
   ],
   { specialty: true },
@@ -592,33 +593,33 @@ const PHYSIQUE_SCI = sub(
         quiz: "quiz-physique-rc",
       }),
       ch("phys-rl", "Le dipôle RL : l'inductance et l'établissement du courant", "T1", { lesson: "dipole-rl" }),
-      ch("phys-rlc-libre", "Oscillations électriques libres dans un circuit RLC", "T1"),
-      ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
-      ch("phys-puissance", "Puissance en régime sinusoïdal", "T2"),
+      ch("phys-rlc-libre", "Oscillations électriques libres dans un circuit RLC", "T1", { lesson: "oscillations-rlc-libres" }),
+      ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2", { lesson: "oscillations-forcees-resonance" }),
+      ch("phys-puissance", "Puissance en régime sinusoïdal", "T2", { lesson: "puissance-sinusoidal" }),
     ]),
     th("phys-mecanique", "Évolution des systèmes mécaniques", [
-      ch("phys-pendule", "Le pendule élastique", "T2"),
-      ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2"),
-      ch("phys-rotation", "Rotation d'un solide autour d'un axe fixe", "T2"),
+      ch("phys-pendule", "Le pendule élastique", "T2", { lesson: "pendule-elastique" }),
+      ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2", { lesson: "energie-mecanique-amortissement" }),
+      ch("phys-rotation", "Rotation d'un solide autour d'un axe fixe", "T2", { lesson: "rotation-axe-fixe" }),
     ]),
     th("phys-ondes", "Les ondes", [
-      ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2"),
-      ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3"),
-      ch("phys-lumiere", "Propagation de la lumière et diffraction", "T3"),
+      ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2", { lesson: "ondes-mecaniques-periodiques" }),
+      ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3", { lesson: "ondes-electromagnetiques" }),
+      ch("phys-lumiere", "Propagation de la lumière et diffraction", "T3", { lesson: "diffraction-lumiere" }),
     ]),
     th("phys-nucleaire", "Physique nucléaire", [
       ch("phys-noyaux", "Noyaux, masse et énergie", "T3", {
         lesson: "noyaux-radioactivite",
         quiz: "quiz-physique-nucleaire",
       }),
-      ch("phys-decroissance", "Décroissance radioactive et datation", "T3"),
+      ch("phys-decroissance", "Décroissance radioactive et datation", "T3", { lesson: "decroissance-radioactive" }),
     ]),
     th("phys-chimie", "Chimie", [
-      ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1"),
-      ch("phys-vitesse", "Vitesse de réaction et facteurs cinétiques", "T1"),
-      ch("phys-action-masse", "Loi d'action de masse et équilibre chimique", "T1"),
-      ch("phys-acides-bases", "Réactions acide-base et dosage", "T2"),
-      ch("phys-oxydoreduction", "Oxydoréduction et piles électrochimiques", "T3"),
+      ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1", { lesson: "avancement-reaction" }),
+      ch("phys-vitesse", "Vitesse de réaction et facteurs cinétiques", "T1", { lesson: "vitesse-reaction" }),
+      ch("phys-action-masse", "Loi d'action de masse et équilibre chimique", "T1", { lesson: "equilibre-action-masse" }),
+      ch("phys-acides-bases", "Réactions acide-base et dosage", "T2", { lesson: "acides-bases-dosage" }),
+      ch("phys-oxydoreduction", "Oxydoréduction et piles électrochimiques", "T3", { lesson: "oxydoreduction-piles" }),
     ]),
   ],
   { specialty: true },
@@ -633,19 +634,19 @@ const PHYSIQUE_TEC = sub("physique", "×3", [
     }),
     ch("phys-rl", "Le dipôle RL", "T1", { lesson: "dipole-rl" }),
     ch("phys-rlc", "Oscillations libres dans un circuit RLC", "T2", { lesson: "oscillations-rlc-libres" }),
-    ch("phys-alternatif", "Courants alternatifs et puissance", "T2"),
+    ch("phys-alternatif", "Courants alternatifs et puissance", "T2", { lesson: "puissance-sinusoidal" }),
   ]),
   th("phys-mecanique-ondes", "Mécanique et ondes", [
-    ch("phys-pendule", "Le pendule élastique", "T2"),
-    ch("phys-ondes-meca", "Ondes mécaniques progressives", "T3"),
+    ch("phys-pendule", "Le pendule élastique", "T2", { lesson: "pendule-elastique" }),
+    ch("phys-ondes-meca", "Ondes mécaniques progressives", "T3", { lesson: "ondes-mecaniques-periodiques" }),
   ]),
   th("phys-nucleaire-chimie", "Nucléaire et chimie", [
     ch("phys-noyaux", "Noyaux et radioactivité", "T3", {
       lesson: "noyaux-radioactivite",
       quiz: "quiz-physique-nucleaire",
     }),
-    ch("phys-acides-bases", "Acides et bases", "T2"),
-    ch("phys-oxydoreduction", "Oxydoréduction et piles", "T3"),
+    ch("phys-acides-bases", "Acides et bases", "T2", { lesson: "acides-bases-dosage" }),
+    ch("phys-oxydoreduction", "Oxydoréduction et piles", "T3", { lesson: "oxydoreduction-piles" }),
   ]),
 ]);
 
@@ -675,8 +676,8 @@ const PHYSIQUE_SPO = sub("physique", "×1", [
     ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
       lesson: "dipole-rc",
     }),
-    ch("phys-mouvement", "Mouvement, forces et énergie", "T2"),
-    ch("phys-ondes-meca", "Ondes et signal", "T3"),
+    ch("phys-mouvement", "Mouvement, forces et énergie", "T2", { lesson: "energie-mecanique-amortissement" }),
+    ch("phys-ondes-meca", "Ondes et signal", "T3", { lesson: "ondes-mecaniques-periodiques" }),
     ch("phys-oxydoreduction", "Oxydoréduction et piles", "T2"),
     ch("phys-acides-bases", "Acides et bases", "T3"),
   ]),
@@ -692,36 +693,36 @@ const SVT_SCI = sub(
   "×4",
   [
     th("svt-reproduction", "I. Reproduction humaine et santé", [
-      ch("svt-repro-homme", "La fonction reproductrice chez l'homme", "T1"),
-      ch("svt-repro-femme", "La fonction reproductrice chez la femme et le cycle ovarien", "T1"),
-      ch("svt-procreation", "Procréation et maîtrise de la procréation", "T1"),
+      ch("svt-repro-homme", "La fonction reproductrice chez l'homme", "T1", { lesson: "fonction-reproductrice-homme" }),
+      ch("svt-repro-femme", "La fonction reproductrice chez la femme et le cycle ovarien", "T1", { lesson: "fonction-reproductrice-femme" }),
+      ch("svt-procreation", "Procréation et maîtrise de la procréation", "T1", { lesson: "procreation-maitrise" }),
     ]),
     th("svt-genetique", "II. Génétique", [
-      ch("svt-brassage", "Le brassage de l'information génétique : méiose et fécondation", "T1"),
+      ch("svt-brassage", "Le brassage de l'information génétique : méiose et fécondation", "T1", { lesson: "brassage-genetique" }),
       ch("svt-transmission", "Transmission des caractères héréditaires", "T2", {
         lesson: "genetique-transmission",
         quiz: "quiz-svt-genetique",
       }),
-      ch("svt-genetique-humaine", "Génétique humaine et anomalies chromosomiques", "T2"),
+      ch("svt-genetique-humaine", "Génétique humaine et anomalies chromosomiques", "T2", { lesson: "genetique-humaine" }),
     ]),
     th("svt-evolution", "III. Évolution biologique", [
-      ch("svt-phylogenie", "Relations de parenté entre les êtres vivants (phylogénie)", "T2"),
-      ch("svt-speciation", "La spéciation et la diversité du vivant", "T2"),
+      ch("svt-phylogenie", "Relations de parenté entre les êtres vivants (phylogénie)", "T2", { lesson: "phylogenie-parente" }),
+      ch("svt-speciation", "La spéciation et la diversité du vivant", "T2", { lesson: "speciation" }),
     ]),
     th("svt-neuro", "IV. Neurophysiologie", [
-      ch("svt-tissu-nerveux", "Le tissu nerveux et le message nerveux", "T2"),
-      ch("svt-reflexe", "Le réflexe myotatique et l'arc réflexe", "T3"),
-      ch("svt-muscle", "Le muscle squelettique et la contraction", "T3"),
-      ch("svt-pression", "La régulation de la pression artérielle", "T3"),
-      ch("svt-hygiene-sn", "Hygiène du système nerveux", "T3"),
+      ch("svt-tissu-nerveux", "Le tissu nerveux et le message nerveux", "T2", { lesson: "tissu-nerveux-message" }),
+      ch("svt-reflexe", "Le réflexe myotatique et l'arc réflexe", "T3", { lesson: "reflexe-myotatique-arc" }),
+      ch("svt-muscle", "Le muscle squelettique et la contraction", "T3", { lesson: "muscle-contraction" }),
+      ch("svt-pression", "La régulation de la pression artérielle", "T3", { lesson: "pression-arterielle" }),
+      ch("svt-hygiene-sn", "Hygiène du système nerveux", "T3", { lesson: "hygiene-systeme-nerveux" }),
     ]),
     th("svt-immunite", "V. Immunité", [
-      ch("svt-soi", "Le soi et le non-soi", "T3"),
+      ch("svt-soi", "Le soi et le non-soi", "T3", { lesson: "soi-non-soi" }),
       ch("svt-immunite-specifique", "L'immunité : réponses innée et acquise", "T3", {
         lesson: "immunologie",
         quiz: "quiz-svt-immunite",
       }),
-      ch("svt-dysfonctionnements", "Dysfonctionnements immunitaires : allergie et SIDA", "T3"),
+      ch("svt-dysfonctionnements", "Dysfonctionnements immunitaires : allergie et SIDA", "T3", { lesson: "dysfonctionnements-immunitaires" }),
     ]),
   ],
   { specialty: true },
@@ -730,19 +731,19 @@ const SVT_SCI = sub(
 /** 4ème Mathématiques (coef. 1) — biologie humaine et génétique. */
 const SVT_MAT = sub("svt", "×1", [
   th("svt-humain", "Biologie humaine", [
-    ch("svt-repro-humaine", "Reproduction humaine et maîtrise de la procréation", "T1"),
+    ch("svt-repro-humaine", "Reproduction humaine et maîtrise de la procréation", "T1", { lesson: "reproduction-humaine" }),
     ch("svt-immunite", "L'immunité et la santé", "T2", {
       lesson: "immunologie",
       quiz: "quiz-svt-immunite",
     }),
-    ch("svt-neuro", "Le système nerveux et le réflexe myotatique", "T3"),
+    ch("svt-neuro", "Le système nerveux et le réflexe myotatique", "T3", { lesson: "reflexe-myotatique" }),
   ]),
   th("svt-genetique", "Génétique", [
     ch("svt-transmission", "Transmission des caractères héréditaires", "T2", {
       lesson: "genetique-transmission",
       quiz: "quiz-svt-genetique",
     }),
-    ch("svt-genetique-humaine", "Génétique humaine et anomalies chromosomiques", "T3"),
+    ch("svt-genetique-humaine", "Génétique humaine et anomalies chromosomiques", "T3", { lesson: "genetique-humaine" }),
   ]),
 ]);
 
@@ -752,7 +753,7 @@ const SVT_SPO = sub(
   "×3",
   [
     th("svt-sport", "Sciences biologiques et effort physique", [
-      ch("svt-repro", "Reproduction humaine et maîtrise de la procréation", "T1"),
+      ch("svt-repro", "Reproduction humaine et maîtrise de la procréation", "T1", { lesson: "reproduction-humaine" }),
       ch("svt-transmission", "Transmission des caractères héréditaires et génétique", "T2", {
         lesson: "genetique-transmission",
         quiz: "quiz-svt-genetique",

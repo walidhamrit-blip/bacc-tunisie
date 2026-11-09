@@ -8,6 +8,11 @@ import { arabeLessons } from "@/db/content/lessons-arabe";
 import { francaisAnglaisLessons } from "@/db/content/lessons-francais-anglais";
 import { troncCommunLessons } from "@/db/content/lessons-tronc-commun";
 import { mementoLessons } from "@/db/content/lessons-memento";
+import { svtLessons } from "@/db/content/lessons-svt";
+import { physiqueChimieLessons } from "@/db/content/lessons-physique-ondes";
+import { chimieLessons } from "@/db/content/lessons-chimie";
+import { informatiqueCommunLessons } from "@/db/content/lessons-informatique-commun";
+import { svtExperimentalLessons } from "@/db/content/lessons-svt-experimental";
 
 /**
  * Fiches complémentaires, organisées filière par filière pour couvrir
@@ -26,5 +31,10 @@ export const extraLessons: LessonSeed[] = [
   ...arabeLessons,
   ...francaisAnglaisLessons,
   ...troncCommunLessons,
+  ...physiqueChimieLessons,
+  ...chimieLessons,
+  ...svtLessons,
+  ...svtExperimentalLessons,
+  ...informatiqueCommunLessons,
   ...mementoLessons,
 ];
