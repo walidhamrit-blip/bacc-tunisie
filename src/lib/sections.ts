@@ -56,9 +56,27 @@ export function normalizeSection(value: string | null | undefined): SectionName 
  * trimestriels (DS1, DS2, DS3) puis la révision et l'examen de juin.
  */
 export const PERIODS = [
-  { id: "T1", short: "T1", label: "1er trimestre", months: "Septembre – Décembre", exam: "Devoir de synthèse N°1" },
-  { id: "T2", short: "T2", label: "2ème trimestre", months: "Janvier – Mars", exam: "Devoir de synthèse N°2" },
-  { id: "T3", short: "T3", label: "3ème trimestre", months: "Avril – Mai", exam: "Devoir de synthèse N°3" },
+  {
+    id: "T1",
+    short: "T1",
+    label: "1er trimestre",
+    months: "Septembre – Décembre",
+    exam: "Devoir de contrôle N°1 · Devoir de synthèse N°1",
+  },
+  {
+    id: "T2",
+    short: "T2",
+    label: "2ème trimestre",
+    months: "Janvier – Mars",
+    exam: "Devoir de contrôle N°2 · Devoir de synthèse N°2",
+  },
+  {
+    id: "T3",
+    short: "T3",
+    label: "3ème trimestre",
+    months: "Avril – Mai",
+    exam: "Devoir de synthèse N°3",
+  },
   { id: "REV", short: "Rév.", label: "Révision & bac", months: "Juin", exam: "Examen du baccalauréat" },
 ] as const;
 

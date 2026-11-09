@@ -8,8 +8,16 @@ import type { PeriodId, SectionName } from "@/lib/sections";
  * de synthèse trimestriels :
  *   Filière (section du bac) → Matière → Thème / Partie → Chapitre → Trimestre
  *
- * T1 = septembre → décembre  (Devoir de synthèse N°1)
- * T2 = janvier → mars        (Devoir de synthèse N°2)
+ * Sources de référence :
+ * - Programmes officiels de la Direction générale des programmes (Ministère de
+ *   l'Éducation), 4ème année secondaire, par section ;
+ * - Répartition annuelle des programmes 2024-2025 et découpage trimestriel des
+ *   séries et devoirs de synthèse publiés par mathinfo.tn (4ème Maths, 4ème
+ *   Sciences exp., 4ème Sciences techniques, 4ème Sciences de l'informatique,
+ *   4ème Économie & Gestion).
+ *
+ * T1 = septembre → décembre  (Devoir de contrôle N°1, Devoir de synthèse N°1)
+ * T2 = janvier → mars        (Devoir de contrôle N°2, Devoir de synthèse N°2)
  * T3 = avril → mai           (Devoir de synthèse N°3)
  * REV = juin                 (révision générale + examen du bac)
  *
@@ -28,6 +36,8 @@ export type ProgramChapter = {
 export type ProgramTheme = {
   slug: string;
   title: string;
+  /** Volume horaire officiel du module, quand le programme le précise. */
+  hours?: string;
   chapters: ProgramChapter[];
 };
 
@@ -59,11 +69,19 @@ const ch = (
   links: { lesson?: string; quiz?: string } = {},
 ): ProgramChapter => ({ slug, title, period, lessonSlug: links.lesson, quizSlug: links.quiz });
 
-const th = (slug: string, title: string, chapters: ProgramChapter[]): ProgramTheme => ({
-  slug,
-  title,
-  chapters,
-});
+const th = (
+  slug: string,
+  title: string,
+  chapters: ProgramChapter[],
+  hours?: string,
+): ProgramTheme => ({ slug, title, hours, chapters });
+
+/** Juin : révision générale et préparation de l'épreuve du baccalauréat. */
+const revThemes = (slug: string): ProgramTheme =>
+  th("revision", "Révision & bac", [
+    ch(`${slug}-revision-fiches`, "Révision générale : fiches, formules et notions clés", "REV"),
+    ch(`${slug}-revision-bac`, "Sujets d'examen corrigés et entraînement chronométré", "REV"),
+  ]);
 
 const sub = (
   slug: string,
@@ -75,213 +93,471 @@ const sub = (
   name: NAME.get(slug) ?? slug,
   coefficient,
   specialty: options.specialty,
-  themes,
+  themes: [...themes, revThemes(slug)],
 });
 
 /* ------------------------------------------------------------------ */
 /*  Tronc commun : matières suivies par toutes les filières            */
 /* ------------------------------------------------------------------ */
 
+/** Philosophie — sections scientifiques, Économie & Gestion, Informatique, Sport (coef. 1). */
 const PHILO_TC = sub("philosophie", "×1", [
-  th("philo-notions", "Les notions du programme", [
-    ch("philo-liberte", "La liberté : définitions, problématiques et plan", "T1", {
+  th("philo-notions", "L'humain entre pluralité et unité", [
+    ch("philo-ipsete", "L'ipséité et l'altérité : le soi, le corps et l'autre", "T1"),
+    ch("philo-conscience", "La conscience, l'inconscient et la liberté", "T1", {
       lesson: "la-liberte",
       quiz: "quiz-philo-liberte",
     }),
-    ch("philo-verite", "La vérité : vérité-correspondance et vérité-vérification", "T1", {
-      lesson: "la-verite",
-    }),
-    ch("philo-raison", "La raison et le réel", "T2"),
-    ch("philo-etat", "L'État, la société et la justice", "T2"),
-    ch("philo-morale", "La morale et le devoir", "T3"),
+    ch("philo-histoire", "L'histoire, la mémoire et le temps humain", "T2"),
+    ch("philo-singularite", "La singularité et l'universalité : identité, différence, culture", "T2"),
+    ch("philo-langage", "La communication et les systèmes symboliques : langue, image, sacré", "T2"),
+  ]),
+  th("philo-science", "La science entre vérité et modélisation", [
+    ch("philo-modelisation", "Les dimensions de la modélisation scientifique", "T3"),
+    ch("philo-limites-epistemologiques", "Limites épistémologiques : réduction, histoire, systèmes techniques", "T3"),
+    ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité et sens", "T3"),
   ]),
   th("philo-methode", "Méthodologie de l'épreuve", [
-    ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T2"),
-    ch("philo-commentaire", "Le commentaire de texte philosophique", "T3"),
+    ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T1"),
+    ch("philo-texte", "L'analyse de texte philosophique : dégager la thèse et l'argumentation", "T2"),
   ]),
 ]);
 
+/** Philosophie — section Lettres (coef. 4, programme le plus étendu). */
+const PHILO_LETTRES = sub(
+  "philosophie",
+  "×4",
+  [
+    th("philo-humain", "I. L'humain entre pluralité et unité", [
+      ch("philo-ipsete", "L'ipséité et l'altérité : le soi, le corps, l'autre", "T1", {
+        lesson: "la-verite",
+      }),
+      ch("philo-verite", "La vérité : vérité-correspondance et vérité-vérification", "T1", {
+        lesson: "la-verite",
+      }),
+      ch("philo-conscience", "La conscience, l'inconscient et la liberté", "T1", {
+        lesson: "la-liberte",
+        quiz: "quiz-philo-liberte",
+      }),
+      ch("philo-histoire", "L'histoire et la condition historique de l'humain", "T1"),
+      ch("philo-singularite", "La singularité et l'universalité : identité, différence, culture", "T2"),
+    ]),
+    th("philo-communication", "II. La communication et les systèmes symboliques", [
+      ch("philo-langage", "Le langage : expression, communication et pensée", "T2"),
+      ch("philo-image", "L'image et le rapport au réel", "T2"),
+      ch("philo-sacre", "Le sacré, le mythe et la religion", "T2"),
+    ]),
+    th("philo-verite", "III. La science entre vérité et modélisation", [
+      ch("philo-modelisation", "Les dimensions de la modélisation scientifique", "T3"),
+      ch("philo-limites-epistemologiques", "Limites épistémologiques de la science", "T3"),
+      ch("philo-limites-philosophiques", "Limites philosophiques : vérité, responsabilité, sens", "T3"),
+    ]),
+    th("philo-valeurs", "IV. Les valeurs entre le relatif et l'absolu", [
+      ch("philo-morale", "La morale, le devoir et le bonheur", "T3"),
+      ch("philo-art", "L'art, le beau et l'expérience esthétique", "T3"),
+      ch("philo-politique", "L'État, la justice et la liberté politique", "T3"),
+    ]),
+    th("philo-methode", "V. Méthodologie de l'épreuve", [
+      ch("philo-dissertation", "La dissertation philosophique : analyser, problématiser, argumenter", "T1"),
+      ch("philo-texte", "L'analyse de texte philosophique", "T2"),
+    ]),
+  ],
+  { specialty: true },
+);
+
+/** Arabe — sections scientifiques, Économie & Gestion, Informatique, Sport (coef. 1). */
 const ARABE_TC = sub("arabe", "×1", [
-  th("arabe-langue", "اللغة والقواعد", [
+  th("arabe-nathr", "النثر", [
+    ch("arabe-maqala", "المقالة الأدبية والاجتماعية", "T1", {
+      lesson: "balagha-image-poetique",
+      quiz: "quiz-arabe-balagha",
+    }),
+    ch("arabe-qissa", "القصة القصيرة", "T2"),
+    ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2"),
+  ]),
+  th("arabe-sher", "الشعر", [
     ch("arabe-balagha", "البلاغة · الصورة الشعرية", "T1", {
       lesson: "balagha-image-poetique",
       quiz: "quiz-arabe-balagha",
     }),
-    ch("arabe-nahw", "النحو والإعراب · مراجعة", "T2"),
-    ch("arabe-tahlil", "تحليل النص الأدبي ومهارات التعبير", "T3"),
+    ch("arabe-tajdid", "الشعر العربي الحديث بين التجديد والكلاسيكية", "T1"),
+  ]),
+  th("arabe-outils", "اللغة والنحو", [
+    ch("arabe-nahw", "النحو والإعراب · مراجعة وتراكيب", "T2"),
+    ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3"),
   ]),
 ]);
 
+/** Arabe — section Lettres (coef. 4). */
+const ARABE_LETTRES = sub(
+  "arabe",
+  "×4",
+  [
+    th("arabe-sher-1", "I. الشعر العربي الحديث", [
+      ch("arabe-balagha", "البلاغة · الصورة الشعرية", "T1", {
+        lesson: "balagha-image-poetique",
+        quiz: "quiz-arabe-balagha",
+      }),
+      ch("arabe-tajdid", "مدرسة التجديد والرومانسية · أبو القاسم الشابي", "T1"),
+      ch("arabe-shabi", "شعر الغزل والصور الشعرية · الشابي", "T1"),
+      ch("arabe-11", "الشعر الاجتماعي والسياسي في العصر الحديث", "T2"),
+    ]),
+    th("arabe-nathr-1", "II. النثر", [
+      ch("arabe-maqala", "المقالة الأدبية", "T1"),
+      ch("arabe-maqala-siyasiyya", "المقالة السياسية والاجتماعية", "T2"),
+      ch("arabe-qissa", "القصة القصيرة", "T2"),
+      ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2"),
+    ]),
+    th("arabe-masrah", "III. المسرح", [
+      ch("arabe-masrah-nash", "المسرح العربي: النشأة والتطور", "T2"),
+      ch("arabe-masrah-hadith", "المسرح العربي الحديث: قضايا ورهانات", "T3"),
+    ]),
+    th("arabe-texte", "IV. النصوص والحجاج", [
+      ch("arabe-texte-hijaji", "النص الحجاجي وبناء الرأي", "T3"),
+      ch("arabe-texte-falsafi", "النص الفكري: القراءة والتحليل", "T3"),
+    ]),
+    th("arabe-outils", "V. اللغة والمهارات", [
+      ch("arabe-nahw", "النحو وتراكيب الجملة", "T1"),
+      ch("arabe-sarf", "الصرف والاشتقاق", "T1"),
+      ch("arabe-balagha-tahlil", "البلاغة وتحليل الصورة", "T2"),
+      ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3"),
+    ]),
+  ],
+  { specialty: true },
+);
+
+/** Français — toutes les sections (coef. 1, sauf Lettres). */
 const FRANCAIS_TC = sub("francais", "×1", [
-  th("francais-litterature", "Littérature et lecture", [
+  th("francais-roman", "Le roman", [
     ch("francais-roman", "Le roman et ses personnages : lire et commenter", "T1", {
       lesson: "roman-personnages",
       quiz: "quiz-francais-roman",
     }),
-    ch("francais-poesie", "La poésie et le lyrisme", "T2"),
-    ch("francais-theatre", "Le théâtre : texte et représentation", "T2"),
+    ch("francais-roman-analyse", "Narrateur, point de vue et construction du personnage", "T1"),
+    ch("francais-roman-theme", "Thèmes, contexte et portée d'une œuvre romanesque", "T2"),
   ]),
-  th("francais-langue", "Langue et méthode", [
+  th("francais-methode", "Méthodologie et langue", [
+    ch("francais-commentaire", "Le commentaire composé : axes et rédaction", "T2"),
+    ch("francais-essai", "L'essai argumentatif : thèse, arguments, exemples", "T3"),
     ch("francais-langue-normes", "Grammaire, conjugaison et lexique au service du sens", "T2"),
-    ch("francais-essai", "L'essai argumentatif et le commentaire composé", "T3"),
   ]),
 ]);
 
+/** Français — section Lettres (coef. 1,5). */
+const FRANCAIS_LETTRES = sub("francais", "×2", [
+  th("francais-roman", "Le roman", [
+    ch("francais-roman", "Le roman et ses personnages : lire et commenter", "T1", {
+      lesson: "roman-personnages",
+      quiz: "quiz-francais-roman",
+    }),
+    ch("francais-roman-analyse", "Narrateur, point de vue et construction du personnage", "T1"),
+  ]),
+  th("francais-poesie-theatre", "La poésie et le théâtre", [
+    ch("francais-poesie", "La poésie et le lyrisme", "T2"),
+    ch("francais-theatre", "Le théâtre : texte et représentation", "T2"),
+  ]),
+  th("francais-methode", "Méthodologie et langue", [
+    ch("francais-commentaire", "Le commentaire composé", "T2"),
+    ch("francais-dissertation", "La dissertation littéraire", "T3"),
+    ch("francais-essai", "L'essai argumentatif", "T3"),
+    ch("francais-langue-normes", "Grammaire, conjugaison et lexique", "T1"),
+  ]),
+]);
+
+/** Anglais — toutes les sections. */
 const ANGLAIS_TC = sub("anglais", "×1", [
   th("anglais-langue", "Language skills", [
     ch("anglais-tenses", "English essentials: tenses, linkers and exam writing", "T1", {
       lesson: "english-tenses-writing",
       quiz: "quiz-anglais-tenses",
     }),
-    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T2"),
-    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T3"),
+    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1"),
+    ch("anglais-vocabulary", "Vocabulary building: education, science and society", "T2"),
+  ]),
+  th("anglais-writing", "Writing and language", [
+    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2"),
+    ch("anglais-grammar", "Grammar and language in context", "T3"),
   ]),
 ]);
 
-const INFO_TC = sub("informatique", "×0.5", [
-  th("info-bureautique", "Outils numériques", [
-    ch("info-tableur", "Tableur : formules, fonctions et graphiques", "T1", {
-      lesson: "tableur-formules-graphiques",
+/** Anglais — section Lettres (coef. 1,5). */
+const ANGLAIS_LETTRES = sub("anglais", "×2", [
+  th("anglais-langue", "Language skills", [
+    ch("anglais-tenses", "English essentials: tenses, linkers and exam writing", "T1", {
+      lesson: "english-tenses-writing",
+      quiz: "quiz-anglais-tenses",
     }),
-    ch("info-web", "Recherche, sécurité et identité numérique", "T2"),
-    ch("info-algorithme", "Algorithmique et Python : construire un programme fiable", "T3", {
+    ch("anglais-reading", "Reading comprehension: identifying the writer's purpose", "T1"),
+    ch("anglais-vocabulary", "Vocabulary building: literature, culture and society", "T2"),
+  ]),
+  th("anglais-writing", "Writing and language", [
+    ch("anglais-writing", "Writing: the argumentative essay and formal email", "T2"),
+    ch("anglais-grammar", "Grammar and language in context", "T2"),
+    ch("anglais-literature", "Literary texts: reading and commenting", "T3"),
+  ]),
+]);
+
+/** Informatique — tronc commun scientifique, Économie & Gestion et Lettres (coef. 0,5). */
+const INFO_TC = sub("informatique", "×1", [
+  th("info-algorithmique", "Algorithmique et programmation", [
+    ch("info-python", "Algorithmique et Python : construire un programme fiable", "T1", {
       lesson: "algorithmique-python",
       quiz: "quiz-info-python",
     }),
+    ch("info-modules", "Sous-programmes et analyse modulaire", "T1"),
+    ch("info-tri-recherche", "Algorithmes de tri et de recherche", "T2"),
+  ]),
+  th("info-donnees", "Données et tableur", [
+    ch("info-tableur", "Tableur : formules, fonctions et graphiques", "T1", {
+      lesson: "tableur-formules-graphiques",
+    }),
+    ch("info-bdd", "Bases de données et requêtes : recherche, sélection, ajout, mise à jour", "T2"),
+  ]),
+  th("info-citoyennete", "Culture numérique", [
+    ch("info-web", "Recherche, sécurité et identité numérique", "T3"),
   ]),
 ]);
 
-/* ------------------------------------------------------------------ */
-/*  Mathématiques par filière (progression officielle)                 */
-/* ------------------------------------------------------------------ */
-
-const MATHS_MAT = sub(
-  "mathematiques",
-  "×4",
+/** Éducation physique — matière de spécialité de la section Sport. */
+const SPORT_SPECIALITE = sub(
+  "education-physique",
+  "×3",
   [
-    th("maths-analyse-1", "Analyse I", [
-      ch("maths-suites", "Suites réelles : arithmétiques, géométriques et récurrence", "T1", {
-        lesson: "suites-numeriques",
-        quiz: "quiz-math-suites",
-      }),
-      ch("maths-limites", "Limites de fonctions", "T1"),
-      ch("maths-continuite", "Continuité et théorème des valeurs intermédiaires", "T1"),
-      ch("maths-derivation", "Dérivation et primitives", "T1"),
+    th("sport-theorie", "Partie théorique · sciences du sport", [
+      ch("sport-anatomie", "Anatomie et physiologie de l'effort", "T1"),
+      ch("sport-biomecanique", "Biomécanique du mouvement sportif", "T1"),
+      ch("sport-physiologie", "Physiologie de l'entraînement, filières énergétiques et récupération", "T2"),
+      ch("sport-nutrition", "Nutrition, hydratation et préparation du sportif", "T2"),
+      ch("sport-pedagogie", "Pédagogie, didactique et animation sportive", "T3"),
+      ch("sport-reglement", "Réglementation, arbitrage et organisation des compétitions", "T3"),
+      ch("sport-sante", "Sport, santé et prévention des blessures", "T3"),
     ]),
-    th("maths-analyse-2", "Analyse II", [
-      ch("maths-etude", "Étude de fonctions et représentation graphique", "T2"),
-      ch("maths-ln", "Fonction logarithme népérien", "T3"),
-      ch("maths-exp", "Fonction exponentielle", "T3"),
-      ch("maths-integrales", "Primitives et calcul intégral : le cours + la méthode", "T3", {
-        lesson: "primitives-integrales",
-      }),
-      ch("maths-equa-diff", "Équations différentielles", "T3"),
-    ]),
-    th("maths-algebre", "Algèbre, arithmétique et géométrie", [
-      ch("maths-complexes", "Nombres complexes et formes trigonométriques", "T2"),
-      ch("maths-isometries", "Isométries et déplacements du plan", "T2"),
-      ch("maths-similitudes", "Similitudes et coniques", "T2"),
-      ch("maths-arithmetique", "Arithmétique dans ℤ : divisibilité et théorème de Bézout", "T3"),
-    ]),
-    th("maths-probas", "Probabilités et statistiques", [
-      ch("maths-probas", "Probabilités conditionnelles et indépendance", "T2"),
-      ch("maths-stats", "Séries statistiques à deux caractères : ajustement", "T3"),
+    th("sport-pratique", "Partie pratique · spécialité sportive", [
+      ch("sport-pratique-1", "Épreuve pratique : habiletés techniques de la discipline", "T2"),
+      ch("sport-pratique-2", "Épreuve pratique : situation de match et arbitrage", "T3"),
     ]),
   ],
   { specialty: true },
 );
 
+/* ------------------------------------------------------------------ */
+/*  Mathématiques par filière (répartition officielle par trimestre)   */
+/* ------------------------------------------------------------------ */
+
+/** 4ème Mathématiques (coef. 4) — répartition mathinfo.tn / programme officiel. */
+const MATHS_MAT = sub(
+  "mathematiques",
+  "×4",
+  [
+    th("maths-analyse-1", "Analyse : continuité, limites, dérivation", [
+      ch("maths-continuite", "Continuité et limites : rappels et théorème des valeurs intermédiaires", "T1"),
+      ch("maths-derivation", "Dérivabilité, théorème des accroissements finis et applications", "T1"),
+      ch("maths-fonctions-reciproques", "Fonctions continues et strictement monotones · fonctions réciproques", "T1"),
+      ch("maths-suites", "Suites réelles : convergence, suites récurrentes, suites adjacentes", "T1", {
+        lesson: "suites-numeriques",
+        quiz: "quiz-math-suites",
+      }),
+      ch("maths-etude", "Étude de fonctions et représentation graphique", "T2"),
+    ]),
+    th("maths-integration", "Primitives, intégrales et équations différentielles", [
+      ch("maths-primitives", "Primitives d'une fonction continue", "T2"),
+      ch("maths-integrales", "Intégrales : calcul, intégration par parties, aire et valeur moyenne", "T2", {
+        lesson: "primitives-integrales",
+      }),
+      ch("maths-ln", "Fonction logarithme népérien", "T2"),
+      ch("maths-exp", "Fonction exponentielle", "T3"),
+      ch("maths-equa-diff", "Équations différentielles y' = ay + b et y'' + ω²y = 0", "T3"),
+    ]),
+    th("maths-algebre", "Algèbre, arithmétique et géométrie de l'espace", [
+      ch("maths-complexes", "Nombres complexes : forme algébrique, module, argument et ensembles de points", "T2"),
+      ch("maths-equations-complexes", "Équations du second degré à coefficients complexes", "T2"),
+      ch("maths-arithmetique", "Arithmétique dans ℤ : division euclidienne, congruences, PGCD, Bézout, Gauss, Fermat", "T1"),
+      ch("maths-produit-espace", "Produit scalaire et produit vectoriel dans l'espace", "T1"),
+      ch("maths-espace", "Droites et plans de l'espace, équations cartésiennes et sphère", "T2"),
+    ]),
+    th("maths-probas", "Probabilités et statistiques", [
+      ch("maths-probas", "Probabilités : dénombrement, probabilité conditionnelle, indépendance", "T2"),
+      ch("maths-variables", "Variables aléatoires : loi de probabilité, espérance et écart-type", "T2"),
+      ch("maths-binomiale", "Loi binomiale", "T3"),
+      ch("maths-stats", "Séries statistiques à deux caractères : ajustement affine", "T3"),
+    ]),
+  ],
+  { specialty: true },
+);
+
+/** 4ème Sciences expérimentales (coef. 3). */
 const MATHS_SCI = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-suites", "Suites réelles : arithmétiques, géométriques et récurrence", "T1", {
+    ch("maths-continuite", "Continuité et limites", "T1"),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-suites", "Suites réelles : convergence et suites récurrentes", "T1", {
       lesson: "suites-numeriques",
       quiz: "quiz-math-suites",
     }),
-    ch("maths-limites", "Limites de fonctions", "T1"),
-    ch("maths-continuite", "Continuité et théorème des valeurs intermédiaires", "T1"),
-    ch("maths-derivation", "Dérivation et primitives", "T1"),
     ch("maths-etude", "Étude de fonctions et représentation graphique", "T2"),
+    ch("maths-primitives", "Primitives", "T2"),
+  ]),
+  th("maths-integration", "Intégrales et fonctions usuelles", [
+    ch("maths-integrales", "Calcul intégral : intégration par parties et aires", "T2", {
+      lesson: "primitives-integrales",
+    }),
     ch("maths-ln", "Fonction logarithme népérien", "T2"),
     ch("maths-exp", "Fonction exponentielle", "T3"),
-    ch("maths-integrales", "Primitives et calcul intégral : le cours + la méthode", "T3", {
-      lesson: "primitives-integrales",
-    }),
   ]),
-  th("maths-complexes", "Nombres complexes et probabilités", [
-    ch("maths-complexes", "Nombres complexes et représentations", "T2"),
-    ch("maths-probas", "Probabilités conditionnelles", "T3"),
-    ch("maths-stats", "Statistiques à deux caractères", "T3"),
+  th("maths-algebre", "Algèbre et géométrie", [
+    ch("maths-complexes", "Nombres complexes et interprétation géométrique", "T2"),
+    ch("maths-espace", "Produit scalaire dans l'espace, droites, plans et sphère", "T3"),
+  ]),
+  th("maths-probas", "Probabilités et statistiques", [
+    ch("maths-probas", "Probabilités conditionnelles et indépendance", "T3"),
+    ch("maths-variables", "Variables aléatoires et loi binomiale", "T3"),
+    ch("maths-stats", "Séries statistiques à deux caractères", "T3"),
   ]),
 ]);
 
+/** 4ème Sciences techniques (coef. 3). */
 const MATHS_TEC = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-limites", "Limites et continuité", "T1"),
-    ch("maths-derivation", "Dérivation et primitives", "T1"),
+    ch("maths-continuite", "Continuité et limites", "T1"),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
     ch("maths-etude", "Étude de fonctions", "T2"),
-    ch("maths-integrales", "Primitives et calcul intégral : le cours + la méthode", "T3", {
+    ch("maths-primitives", "Primitives", "T2"),
+    ch("maths-integrales", "Calcul intégral : intégration par parties et aires", "T3", {
       lesson: "primitives-integrales",
     }),
+    ch("maths-ln", "Fonction logarithme népérien", "T2"),
+    ch("maths-exp", "Fonction exponentielle", "T3"),
   ]),
-  th("maths-suites", "Suites, probabilités et statistiques", [
-    ch("maths-suites", "Suites réelles : arithmétiques, géométriques et récurrence", "T1", {
+  th("maths-geometrie", "Géométrie de l'espace", [
+    ch("maths-vecteurs-espace", "Calcul vectoriel : déterminant, vecteurs directeurs, points coplanaires", "T1"),
+    ch("maths-droites-plans", "Intersections de droites et de plans dans l'espace", "T2"),
+    ch("maths-produit-vectoriel", "Produit scalaire, produit vectoriel et produit mixte", "T2"),
+    ch("maths-sphere", "Équations de droites, de plans et de sphères", "T2"),
+  ]),
+  th("maths-probas", "Suites, probabilités et statistiques", [
+    ch("maths-suites", "Suites réelles : arithmétiques, géométriques et récurrentes", "T3", {
       lesson: "suites-numeriques",
       quiz: "quiz-math-suites",
     }),
-    ch("maths-probas", "Probabilités", "T3"),
+    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2"),
     ch("maths-stats", "Statistiques à deux caractères", "T3"),
   ]),
 ]);
 
-const MATHS_ECO = sub("mathematiques", "×2", [
+/** 4ème Sciences de l'informatique (coef. 3). */
+const MATHS_INF = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
-    ch("maths-limites", "Limites, continuité et dérivation", "T1"),
-    ch("maths-etude", "Étude de fonctions et optimisation", "T2"),
-    ch("maths-suites", "Suites réelles et modélisation", "T2", { lesson: "suites-numeriques" }),
+    ch("maths-continuite", "Continuité : rappels, TVI et bijection", "T1"),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-suites", "Suites réelles", "T1", { lesson: "suites-numeriques", quiz: "quiz-math-suites" }),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T2"),
+    ch("maths-etude", "Étude de fonctions", "T2"),
+    ch("maths-primitives", "Primitives", "T2"),
+    ch("maths-ln", "Fonction logarithme népérien", "T2"),
+    ch("maths-exp", "Fonction exponentielle", "T3"),
+    ch("maths-integrales", "Calcul intégral", "T3", { lesson: "primitives-integrales" }),
+  ]),
+  th("maths-algebre", "Algèbre et arithmétique", [
+    ch("maths-complexes", "Nombres complexes : formes algébrique et trigonométrique", "T1"),
+    ch("maths-equations-complexes", "Équations à coefficients complexes", "T1"),
+    ch("maths-arithmetique", "Arithmétique : congruences, PGCD, Bézout et systèmes", "T1"),
   ]),
   th("maths-probas", "Probabilités et statistiques", [
     ch("maths-probas", "Probabilités conditionnelles", "T3"),
-    ch("maths-stats", "Statistiques à deux caractères", "T3"),
+    ch("maths-stats", "Statistiques à deux caractères", "T2"),
   ]),
 ]);
 
-const MATHS_INF = sub("mathematiques", "×3", [
+/** 4ème Économie & Gestion (coef. 2). */
+const MATHS_ECO = sub("mathematiques", "×2", [
   th("maths-analyse", "Analyse", [
-    ch("maths-limites", "Limites et continuité", "T1"),
-    ch("maths-derivation", "Dérivation et primitives", "T1"),
-    ch("maths-etude", "Étude de fonctions", "T2"),
-    ch("maths-ln", "Fonction logarithme népérien", "T3"),
-    ch("maths-exp", "Fonction exponentielle", "T3"),
-    ch("maths-integrales", "Primitives et calcul intégral : le cours + la méthode", "T3", {
-      lesson: "primitives-integrales",
-    }),
+    ch("maths-continuite", "Continuité et limites", "T1"),
+    ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1"),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
+    ch("maths-primitives", "Primitives", "T1"),
+    ch("maths-etude", "Étude de fonctions et optimisation", "T1"),
+    ch("maths-ln", "Fonction logarithme népérien", "T2"),
+    ch("maths-exp", "Fonction exponentielle", "T2"),
+    ch("maths-integrales", "Calcul intégral", "T2"),
   ]),
-  th("maths-probas", "Suites, probabilités et statistiques", [
-    ch("maths-suites", "Suites réelles", "T1", { lesson: "suites-numeriques", quiz: "quiz-math-suites" }),
-    ch("maths-complexes", "Nombres complexes", "T2"),
-    ch("maths-probas", "Probabilités", "T3"),
-    ch("maths-stats", "Statistiques à deux caractères", "T3"),
+  th("maths-suites-probas", "Suites, probabilités et statistiques", [
+    ch("maths-suites", "Suites réelles et modélisation", "T3", { lesson: "suites-numeriques" }),
+    ch("maths-probas", "Probabilités conditionnelles et variables aléatoires", "T2"),
+    ch("maths-graphes", "Graphes : vocabulaire, chaîne eulérienne et coloration", "T2"),
+    ch("maths-stats", "Statistiques à un et deux caractères", "T1"),
   ]),
 ]);
 
+/** 4ème Sport (coef. 1). */
 const MATHS_SPO = sub("mathematiques", "×1", [
-  th("maths-analyse", "Analyse et statistiques", [
-    ch("maths-suites", "Suites réelles", "T1", { lesson: "suites-numeriques" }),
-    ch("maths-fonctions", "Fonctions et dérivation : applications au sport", "T1"),
+  th("maths-analyse", "Analyse", [
+    ch("maths-continuite", "Continuité et limites", "T1"),
+    ch("maths-derivation", "Dérivabilité et étude de fonctions", "T1"),
+    ch("maths-primitives", "Primitives et calcul intégral", "T2"),
+    ch("maths-ln-exp", "Fonctions logarithme et exponentielle", "T2"),
+  ]),
+  th("maths-stats", "Suites, statistiques et probabilités", [
+    ch("maths-suites", "Suites réelles", "T3", { lesson: "suites-numeriques" }),
     ch("maths-stats", "Statistiques à une et deux variables", "T2"),
-    ch("maths-probas", "Probabilités et échantillonnage", "T3"),
+    ch("maths-probas", "Probabilités", "T3"),
   ]),
 ]);
 
 /* ------------------------------------------------------------------ */
-/*  Physique par filière                                               */
+/*  Sciences physiques par filière                                     */
 /* ------------------------------------------------------------------ */
 
+/** 4ème Mathématiques (coef. 4). */
+const PHYSIQUE_MAT = sub(
+  "physique",
+  "×4",
+  [
+    th("phys-electrique", "Évolution des systèmes électriques", [
+      ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
+        lesson: "dipole-rc",
+        quiz: "quiz-physique-rc",
+      }),
+      ch("phys-rl", "Le dipôle RL", "T1"),
+      ch("phys-rlc-libre", "Oscillations libres dans un circuit RLC", "T1"),
+      ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
+      ch("phys-puissance", "Puissance en régime sinusoïdal et facteur de puissance", "T2"),
+    ]),
+    th("phys-mecanique", "Évolution des systèmes mécaniques", [
+      ch("phys-pendule", "Le pendule élastique : oscillations mécaniques", "T2"),
+      ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2"),
+      ch("phys-rotation", "Mouvement de rotation d'un solide autour d'un axe fixe", "T2"),
+    ]),
+    th("phys-ondes", "Les ondes", [
+      ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2"),
+      ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3"),
+      ch("phys-diffraction", "Diffraction de la lumière", "T3"),
+    ]),
+    th("phys-nucleaire", "Physique nucléaire", [
+      ch("phys-noyaux", "Noyaux, masse et énergie", "T3", {
+        lesson: "noyaux-radioactivite",
+        quiz: "quiz-physique-nucleaire",
+      }),
+      ch("phys-decroissance", "Décroissance radioactive et datation", "T3"),
+    ]),
+    th("phys-chimie", "Chimie", [
+      ch("phys-avancement", "Mesure de l'avancement d'une réaction chimique", "T1"),
+      ch("phys-vitesse", "Vitesse de réaction et facteurs cinétiques", "T1"),
+      ch("phys-action-masse", "Loi d'action de masse et équilibre chimique", "T1"),
+      ch("phys-acides-bases", "Réactions acide-base et dosage", "T2"),
+      ch("phys-oxydoreduction", "Oxydoréduction et piles électrochimiques", "T3"),
+      ch("phys-electrolyse", "Électrolyse et applications industrielles", "T3"),
+    ]),
+  ],
+  { specialty: true },
+);
+
+/** 4ème Sciences expérimentales (coef. 4). */
 const PHYSIQUE_SCI = sub(
   "physique",
   "×4",
   [
-    th("phys-evolution-electrique", "Évolution des systèmes électriques", [
+    th("phys-electrique", "Évolution des systèmes électriques", [
       ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
         lesson: "dipole-rc",
         quiz: "quiz-physique-rc",
@@ -289,17 +565,19 @@ const PHYSIQUE_SCI = sub(
       ch("phys-rl", "Le dipôle RL : l'inductance et l'établissement du courant", "T1"),
       ch("phys-rlc-libre", "Oscillations électriques libres dans un circuit RLC", "T1"),
       ch("phys-rlc-force", "Oscillations électriques forcées et résonance", "T2"),
+      ch("phys-puissance", "Puissance en régime sinusoïdal", "T2"),
     ]),
-    th("phys-evolution-mecanique", "Évolution des systèmes mécaniques", [
-      ch("phys-pendule", "Le pendule élastique : oscillations mécaniques", "T2"),
+    th("phys-mecanique", "Évolution des systèmes mécaniques", [
+      ch("phys-pendule", "Le pendule élastique", "T2"),
       ch("phys-energie-meca", "Énergie mécanique et amortissement", "T2"),
+      ch("phys-rotation", "Rotation d'un solide autour d'un axe fixe", "T2"),
     ]),
     th("phys-ondes", "Les ondes", [
       ch("phys-ondes-meca", "Ondes mécaniques progressives et périodiques", "T2"),
       ch("phys-ondes-em", "Ondes électromagnétiques et spectre", "T3"),
       ch("phys-lumiere", "Propagation de la lumière et diffraction", "T3"),
     ]),
-    th("phys-nucleaire", "Physique atomique et nucléaire", [
+    th("phys-nucleaire", "Physique nucléaire", [
       ch("phys-noyaux", "Noyaux, masse et énergie", "T3", {
         lesson: "noyaux-radioactivite",
         quiz: "quiz-physique-nucleaire",
@@ -317,6 +595,7 @@ const PHYSIQUE_SCI = sub(
   { specialty: true },
 );
 
+/** 4ème Sciences techniques (coef. 3). */
 const PHYSIQUE_TEC = sub("physique", "×3", [
   th("phys-electrique", "Électricité", [
     ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
@@ -341,6 +620,7 @@ const PHYSIQUE_TEC = sub("physique", "×3", [
   ]),
 ]);
 
+/** 4ème Sciences de l'informatique (coef. 2). */
 const PHYSIQUE_INF = sub("physique", "×2", [
   th("phys-electrique", "Électricité et ondes", [
     ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
@@ -360,6 +640,7 @@ const PHYSIQUE_INF = sub("physique", "×2", [
   ]),
 ]);
 
+/** 4ème Sport (coef. 1). */
 const PHYSIQUE_SPO = sub("physique", "×1", [
   th("phys-sport", "Physique appliquée au mouvement", [
     ch("phys-rc", "Le dipôle RC : charge et décharge d'un condensateur", "T1", {
@@ -367,13 +648,16 @@ const PHYSIQUE_SPO = sub("physique", "×1", [
     }),
     ch("phys-mouvement", "Mouvement, forces et énergie", "T2"),
     ch("phys-ondes-meca", "Ondes et signal", "T3"),
+    ch("phys-oxydoreduction", "Oxydoréduction et piles", "T2"),
+    ch("phys-acides-bases", "Acides et bases", "T3"),
   ]),
 ]);
 
 /* ------------------------------------------------------------------ */
-/*  SVT                                                                */
+/*  Sciences naturelles (SVT)                                          */
 /* ------------------------------------------------------------------ */
 
+/** 4ème Sciences expérimentales (coef. 4) — programme officiel complet. */
 const SVT_SCI = sub(
   "svt",
   "×4",
@@ -414,28 +698,55 @@ const SVT_SCI = sub(
   { specialty: true },
 );
 
-const SVT_SPO = sub("svt", "×3", [
-  th("svt-sport", "Le corps humain et l'effort", [
-    ch("svt-repro-femme", "Reproduction humaine et maîtrise de la procréation", "T1"),
+/** 4ème Mathématiques (coef. 1) — biologie humaine et génétique. */
+const SVT_MAT = sub("svt", "×1", [
+  th("svt-humain", "Biologie humaine", [
+    ch("svt-repro-humaine", "Reproduction humaine et maîtrise de la procréation", "T1"),
+    ch("svt-immunite", "L'immunité et la santé", "T2", {
+      lesson: "immunologie",
+      quiz: "quiz-svt-immunite",
+    }),
+    ch("svt-neuro", "Le système nerveux et le réflexe myotatique", "T3"),
+  ]),
+  th("svt-genetique", "Génétique", [
     ch("svt-transmission", "Transmission des caractères héréditaires", "T2", {
       lesson: "genetique-transmission",
       quiz: "quiz-svt-genetique",
     }),
-    ch("svt-reflexe", "Le réflexe myotatique et le muscle squelettique", "T2"),
-    ch("svt-immunite-specifique", "L'immunité et la santé du sportif", "T3", {
-      lesson: "immunologie",
-      quiz: "quiz-svt-immunite",
-    }),
+    ch("svt-genetique-humaine", "Génétique humaine et anomalies chromosomiques", "T3"),
   ]),
 ]);
 
+/** 4ème Sport (coef. 3) — sciences biologiques appliquées à l'effort. */
+const SVT_SPO = sub(
+  "svt",
+  "×3",
+  [
+    th("svt-sport", "Sciences biologiques et effort physique", [
+      ch("svt-repro", "Reproduction humaine et maîtrise de la procréation", "T1"),
+      ch("svt-transmission", "Transmission des caractères héréditaires et génétique", "T2", {
+        lesson: "genetique-transmission",
+        quiz: "quiz-svt-genetique",
+      }),
+      ch("svt-neuro-muscle", "Système nerveux, réflexe myotatique et muscle squelettique", "T2"),
+      ch("svt-immunite", "Immunité et santé du sportif", "T3", {
+        lesson: "immunologie",
+        quiz: "quiz-svt-immunite",
+      }),
+      ch("svt-metabolisme", "Métabolisme énergétique et adaptation à l'effort", "T3"),
+      ch("svt-nutrition", "Nutrition du sportif et équilibre alimentaire", "T3"),
+    ]),
+  ],
+  { specialty: true },
+);
+
 /* ------------------------------------------------------------------ */
-/*  Technologie (Sciences de l'ingénieur)                              */
+/*  Sciences de l'ingénieur / Technologie (Sciences techniques)         */
 /* ------------------------------------------------------------------ */
 
 const TECHNOLOGIE = sub(
   "technologie",
-  "×3",
+  "×3 (+ TP ×1)",
   [
     th("tech-systemes-logiques", "Systèmes logiques", [
       ch("tech-chaine", "Chaîne d'énergie et chaîne d'information d'un système", "T1", {
@@ -467,51 +778,65 @@ const TECHNOLOGIE = sub(
 );
 
 /* ------------------------------------------------------------------ */
-/*  Informatique (algorithme + bases de données)                       */
+/*  Sciences de l'informatique (4ème SI)                               */
 /* ------------------------------------------------------------------ */
 
 const INFO_SPECIALITE = sub(
   "informatique",
-  "×3 (Algo) · ×1.5 (BDD & TIC)",
+  "×3 (Algo. : écrit 2 + pratique 1) · ×3 (BDD & TIC)",
   [
-    th("info-algo-bases", "Algorithmique et programmation", [
-      ch("info-python", "Algorithmique et Python : construire un programme fiable", "T1", {
-        lesson: "algorithmique-python",
-        quiz: "quiz-info-python",
-      }),
-      ch("info-tri", "Algorithmes de tri : sélection, insertion, à bulles", "T1"),
-      ch("info-recherche", "Recherche séquentielle et dichotomique", "T1"),
-      ch("info-recursivite", "Algorithmes récursifs", "T2"),
-      ch("info-arithmetique", "Algorithmes arithmétiques : PGCD, nombres premiers", "T2"),
-      ch("info-approximation", "Méthodes d'approximation : dichotomie, Newton", "T3"),
-      ch("info-ihm", "Interface graphique et programmation événementielle", "T3"),
-    ]),
-    th("info-structures", "Structures de données", [
-      ch("info-tableaux", "Tableaux et matrices", "T1"),
-      ch("info-chaines", "Chaînes de caractères", "T2"),
-      ch("info-fichiers", "Fichiers et enregistrements", "T3"),
-    ]),
-    th("info-bdd", "Bases de données", [
-      ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1"),
-      ch("info-mcd", "Conception : modèle conceptuel et modèle logique", "T2"),
-      ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2"),
-      ch("info-sql", "Bases de données relationnelles et requêtes SQL", "T3", {
-        lesson: "bases-donnees-sql",
-        quiz: "quiz-info-sql",
-      }),
-      ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3"),
-    ]),
-    th("info-tic", "Systèmes et technologies de l'information", [
-      ch("info-systeme", "Architecture matérielle et systèmes d'exploitation", "T1"),
-      ch("info-reseaux", "Réseaux, internet et protocoles", "T2"),
-      ch("info-securite", "Sécurité informatique et protection des données", "T3"),
-    ]),
+    th(
+      "info-algo",
+      "Algorithmique & programmation",
+      [
+        ch("info-records", "Enregistrements, vecteurs d'enregistrements et fichiers", "T1"),
+        ch("info-fichiers", "Fichiers textes et fichiers typés : création, lecture, mise à jour", "T1"),
+        ch("info-recursivite", "Récursivité : définition et applications", "T1"),
+        ch("info-tri", "Algorithmes de tri : insertion et tri Shell", "T1"),
+        ch("info-suites-recurrentes", "Algorithmes récurrents d'ordre 2 et plus", "T2", {
+          lesson: "algorithmique-python",
+          quiz: "quiz-info-python",
+        }),
+        ch("info-arithmetique", "Algorithmes d'arithmétique : PGCD récursif, divisibilité, Fibonacci, base, C(n,p)", "T2"),
+        ch("info-approximation", "Algorithmes d'approximation : point fixe, constantes, calcul d'aires", "T3"),
+        ch("info-avances", "Algorithmes avancés : tri rapide, tour de Hanoi, huit dames, voyageur de commerce", "T3"),
+      ],
+      "118 h",
+    ),
+    th(
+      "info-bdd",
+      "Bases de données",
+      [
+        ch("info-modele", "Modèle relationnel : relations, clés et contraintes", "T1"),
+        ch("info-mcd", "Conception : modèle conceptuel (entités-relations) et modèle logique", "T2"),
+        ch("info-algebre", "Algèbre relationnelle : sélection, projection, jointure", "T2"),
+        ch("info-sql", "Requêtes SQL : recherche, sélection, ajout et mise à jour", "T3", {
+          lesson: "bases-donnees-sql",
+          quiz: "quiz-info-sql",
+        }),
+        ch("info-sql-avance", "SQL avancé : agrégats, groupes et sous-requêtes", "T3"),
+      ],
+      "45 h",
+    ),
+    th(
+      "info-tic",
+      "TIC · systèmes, réseaux et web",
+      [
+        ch("info-collaboration", "Outils de collaboration : réseau local, forums, visioconférence", "T1"),
+        ch("info-systeme", "Systèmes d'exploitation et architecture matérielle", "T1"),
+        ch("info-reseaux", "Réseaux informatiques : topologies et services", "T2"),
+        ch("info-web", "Pages web et langages de script : données échangées à distance", "T2"),
+        ch("info-animation", "Production électronique avancée : animation et multimédia", "T3"),
+        ch("info-publication", "Publication de sites web : hébergement, référencement, sécurisation", "T3"),
+      ],
+      "50 h",
+    ),
   ],
   { specialty: true },
 );
 
 /* ------------------------------------------------------------------ */
-/*  Économie & Gestion                                                  */
+/*  Économie & Gestion                                                 */
 /* ------------------------------------------------------------------ */
 
 const ECONOMIE = sub(
@@ -540,6 +865,11 @@ const ECONOMIE = sub(
       ch("eco-echanges", "Le commerce international et les échanges extérieurs de la Tunisie", "T3"),
       ch("eco-integration", "Intégration régionale et accords de libre-échange", "T3"),
     ]),
+    th("eco-politiques", "V. Les politiques économiques", [
+      ch("eco-role-etat", "Le rôle de l'État dans l'économie", "T3"),
+      ch("eco-monetaire", "Politique monétaire, inflation et rôle de la BCT", "T3"),
+      ch("eco-budgetaire", "Politique budgétaire et finances publiques", "T3"),
+    ]),
   ],
   { specialty: true },
 );
@@ -554,6 +884,7 @@ const GESTION = sub(
         quiz: "quiz-gestion-bilan",
       }),
       ch("gest-charges", "Les charges et les produits : formation du résultat", "T1"),
+      ch("gest-compte-resultat", "Le compte de résultat et les états financiers", "T1"),
     ]),
     th("gest-stocks", "Gestion des stocks et des approvisionnements", [
       ch("gest-stock", "La gestion comptable des stocks", "T2"),
@@ -566,7 +897,7 @@ const GESTION = sub(
     ]),
     th("gest-marketing", "Marketing et gestion commerciale", [
       ch("gest-marche", "L'étude de marché : demande, offre et concurrence", "T2"),
-      ch("gest-ventes", "La provocation des ventes : produit, prix, distribution, communication", "T3"),
+      ch("gest-ventes", "La politique commerciale : produit, prix, distribution, communication", "T3"),
     ]),
     th("gest-finance", "Gestion financière", [
       ch("gest-bilan-fonctionnel", "Le bilan fonctionnel et les ratios financiers", "T3"),
@@ -577,126 +908,84 @@ const GESTION = sub(
   { specialty: true },
 );
 
+/* ------------------------------------------------------------------ */
+/*  Histoire-Géographie                                                 */
+/* ------------------------------------------------------------------ */
+
 const HG_ECO = sub("histoire-geographie", "×2", [
   th("hg-tunisie", "La Tunisie contemporaine", [
     ch("hg-protectorat", "La Tunisie de 1881 à 1956 : la construction du mouvement national", "T1", {
       lesson: "tunisie-mouvement-national",
       quiz: "quiz-hg-tunisie",
     }),
+    ch("hg-economie-coloniale", "L'économie et la société tunisiennes sous le protectorat", "T1"),
     ch("hg-independance", "La Tunisie depuis 1956 : construction de l'État et développement", "T2"),
+    ch("hg-tunisie-actuelle", "La Tunisie aujourd'hui : population, villes et activités", "T2"),
   ]),
   th("hg-monde", "Le monde d'aujourd'hui", [
+    ch("hg-guerres", "Les grands conflits mondiaux et la construction de la paix", "T1"),
     ch("hg-mondialisation", "La mondialisation et ses effets", "T2"),
     ch("hg-espaces", "Les espaces productifs et les flux mondiaux", "T3"),
+    ch("hg-maghreb", "Le Maghreb et l'intégration régionale", "T3"),
     ch("hg-cartographie", "Cartographie et analyse de documents", "T3"),
   ]),
 ]);
 
-/* ------------------------------------------------------------------ */
-/*  Lettres                                                            */
-/* ------------------------------------------------------------------ */
-
-const ARABE_LETTRES = sub(
-  "arabe",
-  "×4",
+const HG_LETTRES = sub(
+  "histoire-geographie",
+  "×3",
   [
-    th("arabe-sher", "الشعر", [
-      ch("arabe-balagha", "البلاغة · الصورة الشعرية", "T1", {
-        lesson: "balagha-image-poetique",
-        quiz: "quiz-arabe-balagha",
+    th("hg-tunisie", "La Tunisie contemporaine", [
+      ch("hg-protectorat", "La Tunisie de 1881 à 1956 : la construction du mouvement national", "T1", {
+        lesson: "tunisie-mouvement-national",
+        quiz: "quiz-hg-tunisie",
       }),
-      ch("arabe-tajdid", "الشعر العربي الحديث · مدرسة التجديد والرومانسية", "T1"),
-      ch("arabe-shabi", "شعر الغزل · أبو القاسم الشابي", "T2"),
-      ch("arabe-11", "الشعر الاجتماعي في العصر الحديث", "T3"),
+      ch("hg-economie-coloniale", "L'économie et la société tunisiennes sous le protectorat", "T1"),
+      ch("hg-independance", "La Tunisie depuis 1956 : État, développement et mutations sociales", "T2"),
+      ch("hg-tunisie-actuelle", "La Tunisie aujourd'hui : population, villes et activités", "T2"),
+      ch("hg-transition", "La Tunisie après 2011 : transition politique et défis économiques", "T3"),
     ]),
-    th("arabe-nathr", "النثر والمسرح", [
-      ch("arabe-maqala", "المقالة الأدبية والاجتماعية", "T1"),
-      ch("arabe-riwaya", "الرواية العربية وأسئلة الحداثة", "T2"),
-      ch("arabe-masrah", "المسرح العربي: النشأة والتطور", "T2"),
-      ch("arabe-qissa", "القصة القصيرة", "T3"),
-    ]),
-    th("arabe-outils", "اللغة والمهارات", [
-      ch("arabe-nahw", "النحو وتراكيب الجملة", "T2"),
-      ch("arabe-tahlil", "تحليل النص الأدبي وبناء المقال", "T3"),
+    th("hg-monde", "Histoire et géographie du monde contemporain", [
+      ch("hg-guerres", "Les grands conflits mondiaux et la construction de la paix", "T1"),
+      ch("hg-mondialisation", "La mondialisation et les espaces productifs", "T2"),
+      ch("hg-espaces", "Les échanges mondiaux et les pôles de la puissance", "T3"),
+      ch("hg-cartographie", "Étude de documents et cartographie", "T3"),
     ]),
   ],
   { specialty: true },
 );
 
-const PHILO_LETTRES = sub(
-  "philosophie",
-  "×4",
-  [
-    th("philo-notions", "Les grandes notions", [
-      ch("philo-liberte", "La liberté : définitions, problématiques et plan", "T1", {
-        lesson: "la-liberte",
-        quiz: "quiz-philo-liberte",
-      }),
-      ch("philo-verite", "La vérité : vérité-correspondance et vérité-vérification", "T1", {
-        lesson: "la-verite",
-      }),
-      ch("philo-raison", "La raison et le réel", "T2"),
-      ch("philo-etat", "L'État, la société et la justice", "T2"),
-      ch("philo-art", "L'art et le beau", "T3"),
-      ch("philo-morale", "La morale, le devoir et le bonheur", "T3"),
-    ]),
-    th("philo-methode", "Méthodologie de l'épreuve", [
-      ch("philo-dissertation", "La dissertation philosophique", "T2"),
-      ch("philo-commentaire", "Le commentaire de texte philosophique", "T3"),
-    ]),
-  ],
-  { specialty: true },
-);
-
-const HG_LETTRES = sub("histoire-geographie", "×3", [
-  th("hg-tunisie", "La Tunisie contemporaine", [
-    ch("hg-protectorat", "La Tunisie de 1881 à 1956 : la construction du mouvement national", "T1", {
-      lesson: "tunisie-mouvement-national",
-      quiz: "quiz-hg-tunisie",
-    }),
-    ch("hg-independance", "La Tunisie depuis 1956", "T2"),
-  ]),
-  th("hg-monde", "Histoire et géographie du monde contemporain", [
-    ch("hg-guerres", "Les grands conflits mondiaux et la construction de la paix", "T2"),
-    ch("hg-mondialisation", "La mondialisation et les espaces productifs", "T3"),
-    ch("hg-cartographie", "Étude de documents et cartographie", "T3"),
-  ]),
-]);
+/* ------------------------------------------------------------------ */
+/*  Pensée islamique (section Lettres)                                 */
+/* ------------------------------------------------------------------ */
 
 const ISLAMIQUE_LETTRES = sub("education-islamique", "×1", [
   th("islam-valeurs", "المقاصد والقيم", [
     ch("islam-wasatiyya", "الوسطية والاعتدال: قيم الدين في حياة الفرد والمجتمع", "T1", {
       lesson: "wasatiyya-valeurs",
     }),
-    ch("islam-maqasid", "مقاصد الشريعة وضروراتها الخمس", "T2"),
-    ch("islam-hiwar", "حوار الحضارات والتسامح", "T3"),
-    ch("islam-qadaya", "القضايا المجتمعية المعاصرة", "T3"),
+    ch("islam-maqasid", "مقاصد الشريعة وضروراتها الخمس", "T1"),
+    ch("islam-hiwar", "حوار الحضارات والتسامح", "T2"),
+    ch("islam-qadaya", "القضايا المجتمعية المعاصرة", "T2"),
+    ch("islam-aqida", "العقيدة الإسلامية وأثرها في السلوك", "T2"),
+    ch("islam-akhlaq", "الأخلاق الإسلامية وقيم المواطنة", "T3"),
   ]),
 ]);
 
 /* ------------------------------------------------------------------ */
-/*  Sport                                                              */
+/*  Coefficients spécifiques à la section Sport                        */
 /* ------------------------------------------------------------------ */
 
-const SPORT_SPECIALITE = sub(
-  "technologie",
-  "×3",
-  [
-    th("sport-theorie", "Spécialité sportive · partie théorique", [
-      ch("sport-anatomie", "Anatomie et physiologie de l'effort", "T1"),
-      ch("sport-biomecanique", "Biomécanique du mouvement sportif", "T1"),
-      ch("sport-entrainement", "Physiologie de l'entraînement et récupération", "T2"),
-      ch("sport-nutrition", "Nutrition et préparation du sportif", "T2"),
-      ch("sport-reglement", "Réglementation et organisation des compétitions", "T3"),
-      ch("sport-pedagogie", "Pédagogie et animation sportive", "T3"),
-    ]),
-    th("sport-pratique", "Spécialité sportive · partie pratique", [
-      ch("sport-pratique-1", "Épreuve pratique : habiletés techniques de la discipline", "T2"),
-      ch("sport-pratique-2", "Épreuve pratique : situation de match et arbitrage", "T3"),
-    ]),
-  ],
-  { specialty: true },
-);
+/** Retire le thème de révision (ajouté automatiquement par `sub`) avant réutilisation. */
+const sansRevision = (themes: ProgramTheme[]): ProgramTheme[] =>
+  themes.filter((theme) => theme.slug !== "revision");
+
+/** Philosophie en section Sport : coefficient 1,5. */
+const PHILO_SPO = sub("philosophie", "×1,5", sansRevision(PHILO_TC.themes));
+/** Français en section Sport : coefficient 1,5. */
+const FRANCAIS_SPO = sub("francais", "×1,5", sansRevision(FRANCAIS_TC.themes));
+/** Anglais en section Sport : coefficient 1,5. */
+const ANGLAIS_SPO = sub("anglais", "×1,5", sansRevision(ANGLAIS_TC.themes));
 
 /* ------------------------------------------------------------------ */
 /*  Les 7 filières du baccalauréat tunisien                            */
@@ -705,45 +994,45 @@ const SPORT_SPECIALITE = sub(
 export const PROGRAM: ProgramSection[] = [
   {
     section: "Mathématiques",
-    motto: "La filière la plus dense en mathématiques et en physique : 4h de maths par semaine et un niveau d'abstraction élevé.",
-    rhythm: "DS1 en décembre (suites, limites, continuité, dérivation) · DS2 en mars (études de fonctions, complexes, probabilités) · DS3 en mai (ln, exp, intégrales, arithmétique) · bac en juin.",
-    subjects: [MATHS_MAT, PHYSIQUE_SCI, SVT_SPO, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, INFO_TC],
+    motto: "La filière la plus dense en mathématiques (coef. 4) et en sciences physiques (coef. 4), avec un niveau d'abstraction élevé.",
+    rhythm: "DS1 en décembre (continuité, dérivation, arithmétique, suites, complexes, RC/RL, cinétique chimique) · DS2 en mars (fonctions réciproques, primitives, intégrales, ln, probabilités, RLC, ondes) · DS3 en mai (exponentielle, équations différentielles, binomiale, statistiques, nucléaire) · bac en juin.",
+    subjects: [MATHS_MAT, PHYSIQUE_MAT, SVT_MAT, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, INFO_TC],
   },
   {
     section: "Sciences expérimentales",
-    motto: "La filière la plus demandée : physique-chimie et SVT à coefficient 4, avec les mathématiques en soutien.",
-    rhythm: "DS1 en décembre (RC/RL, chimie de l'équilibre, suites) · DS2 en mars (RLC, ondes, génétique) · DS3 en mai (nucléaire, immunité, intégrales) · bac en juin.",
+    motto: "La filière la plus demandée : sciences physiques et sciences naturelles à coefficient 4, mathématiques à coefficient 3.",
+    rhythm: "DS1 en décembre (RC/RL, chimie de l'équilibre, reproduction, brassage génétique, continuité, suites) · DS2 en mars (RLC, ondes, génétique, phylogénie, primitives, complexes) · DS3 en mai (nucléaire, immunité, neurophysiologie, exponentielles, intégrales, probabilités) · bac en juin.",
     subjects: [PHYSIQUE_SCI, SVT_SCI, MATHS_SCI, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, INFO_TC],
   },
   {
     section: "Sciences techniques",
-    motto: "Électricité, automatismes et mécanique : la technologie pèse autant que les maths et la physique.",
-    rhythm: "DS1 en décembre (logique combinatoire et séquentielle, limites) · DS2 en mars (GRAFCET, API, triphasé, RLC) · DS3 en mai (transformateur, moteurs, AOP, intégrales) · bac en juin.",
+    motto: "Électricité, automatismes et mécanique : la technologie pèse autant que les maths et la physique (coef. 3 chacune).",
+    rhythm: "DS1 en décembre (logique combinatoire et séquentielle, continuité, dérivation) · DS2 en mars (GRAFCET, API, triphasé, RLC, produit vectoriel) · DS3 en mai (transformateur, moteurs, AOP, intégrales, statistiques) · bac en juin.",
     subjects: [TECHNOLOGIE, MATHS_TEC, PHYSIQUE_TEC, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, INFO_TC],
   },
   {
     section: "Informatique",
-    motto: "Algorithmique et bases de données au premier plan, avec un socle scientifique solide.",
-    rhythm: "DS1 en décembre (algorithmes de tri, limites) · DS2 en mars (récursivité, conception de bases) · DS3 en mai (approximation, SQL, intégrales) · bac en juin.",
+    motto: "Algorithmique (coef. 3) et bases de données au premier plan, avec un socle scientifique solide (maths coef. 3, physique coef. 2).",
+    rhythm: "DS1 en décembre (enregistrements et fichiers, tris, arithmétique, continuité, complexes) · DS2 en mars (récursivité, conception de bases, algèbre relationnelle, ln, probabilités) · DS3 en mai (approximation, algorithmes avancés, SQL, intégrales, statistiques) · bac en juin.",
     subjects: [INFO_SPECIALITE, MATHS_INF, PHYSIQUE_INF, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC],
   },
   {
     section: "Économie & Gestion",
-    motto: "Économie générale et gestion comptable et financière, éclairées par l'histoire-géographie et les maths.",
-    rhythm: "DS1 en décembre (croissance, bilan et charges, limites) · DS2 en mars (structures, coûts complets, étude de marché) · DS3 en mai (mondialisation, coûts partiels, financement) · bac en juin.",
+    motto: "Économie générale et gestion comptable et financière (coef. 3 chacune), éclairées par l'histoire-géographie et les maths.",
+    rhythm: "DS1 en décembre (croissance, bilan et charges, limites et dérivation, Tunisie 1881-1956) · DS2 en mars (structures économiques, coûts complets, étude de marché, ln et exponentielles, probabilités) · DS3 en mai (mondialisation, coûts partiels, financement, intégrales, suites) · bac en juin.",
     subjects: [ECONOMIE, GESTION, HG_ECO, MATHS_ECO, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, INFO_TC],
   },
   {
     section: "Lettres",
-    motto: "Arabe et philosophie à coefficient 4 : l'argumentation et l'analyse de texte sont au cœur de la filière.",
-    rhythm: "DS1 en décembre (poésie et image, liberté et vérité, Tunisie 1881-1956) · DS2 en mars (roman, théâtre, raison et réel) · DS3 en mai (dissertation, commentaire, mondialisation) · bac en juin.",
-    subjects: [ARABE_LETTRES, PHILO_LETTRES, HG_LETTRES, FRANCAIS_TC, ANGLAIS_TC, ISLAMIQUE_LETTRES, INFO_TC],
+    motto: "Arabe et philosophie à coefficient 4 : l'argumentation, l'analyse de texte et la dissertation sont au cœur de la filière.",
+    rhythm: "DS1 en décembre (poésie et image, ipséité et altérité, Tunisie 1881-1956, langue arabe) · DS2 en mars (roman, théâtre, communication et systèmes symboliques, Tunisie depuis 1956) · DS3 en mai (dissertation, commentaire, valeurs, mondialisation) · bac en juin.",
+    subjects: [ARABE_LETTRES, PHILO_LETTRES, HG_LETTRES, FRANCAIS_LETTRES, ANGLAIS_LETTRES, ISLAMIQUE_LETTRES, INFO_TC],
   },
   {
     section: "Sport",
-    motto: "Le sport comme matière de spécialité, avec un socle scientifique (SVT coefficient 3) et le tronc commun.",
-    rhythm: "DS1 en décembre (anatomie, reproduction, RC) · DS2 en mars (entraînement, génétique, coefficients physiques) · DS3 en mai (pédagogie, immunité, statistiques) · épreuves pratiques au 2ème et 3ème trimestre, bac en juin.",
-    subjects: [SPORT_SPECIALITE, SVT_SPO, PHILO_TC, ARABE_TC, FRANCAIS_TC, ANGLAIS_TC, MATHS_SPO, PHYSIQUE_SPO],
+    motto: "L'éducation physique comme spécialité (coef. 3, dont 2,5 à l'épreuve pratique) et les sciences biologiques (coef. 3).",
+    rhythm: "DS1 en décembre (anatomie, biomécanique, reproduction, RC, continuité) · DS2 en mars (entraînement, nutrition, génétique, neuro-muscle, primitives) · DS3 en mai (pédagogie, réglementation, immunité, métabolisme, probabilités) · épreuves pratiques aux 2ème et 3ème trimestres, bac en juin.",
+    subjects: [SPORT_SPECIALITE, SVT_SPO, MATHS_SPO, PHYSIQUE_SPO, PHILO_SPO, ARABE_TC, FRANCAIS_SPO, ANGLAIS_SPO],
   },
 ];
 

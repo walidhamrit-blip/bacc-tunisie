@@ -30,7 +30,7 @@ export const subjectSeeds: SubjectSeed[] = [
     accent: "#1E5EFF",
     description:
       "Analyse, suites, complexes et probabilités : les chapitres du programme officiel expliqués pas à pas, avec les réflexes de rédaction attendus au bac.",
-    sections: [MAT, SCI, TEC, ECO, INF, SPO],
+    sections: [MAT, SCI, TEC, ECO, INF],
     orderIndex: 1,
   },
   {
@@ -54,7 +54,7 @@ export const subjectSeeds: SubjectSeed[] = [
     accent: "#0E9F6E",
     description:
       "Génétique, immunologie et reproduction : des fiches synthétiques, des schémas à maîtriser et des exercices de synthèse corrigés.",
-    sections: [MAT, SCI],
+    sections: [MAT, SCI, SPO],
     orderIndex: 3,
   },
   {
@@ -138,7 +138,7 @@ export const subjectSeeds: SubjectSeed[] = [
     accent: "#A16207",
     description:
       "La Tunisie contemporaine, la mondialisation et les espaces productifs : frises, cartes mentales et réponses structurées.",
-    sections: [MAT, SCI, TEC, ECO, LET, INF, SPO],
+    sections: [ECO, LET],
     orderIndex: 10,
   },
   {
@@ -150,7 +150,7 @@ export const subjectSeeds: SubjectSeed[] = [
     accent: "#166534",
     description:
       "النصوص القرآنية والحديثية : فهم المقاصد والقيم، منهجية التفسير وربط النص بالواقع.",
-    sections: [MAT, SCI, TEC, ECO, LET, INF, SPO],
+    sections: [LET],
     orderIndex: 11,
   },
   {
@@ -176,5 +176,17 @@ export const subjectSeeds: SubjectSeed[] = [
       "Bilan, compte de résultat et enregistrements comptables : la logique du débit-crédit et des exercices corrigés type bac.",
     sections: [ECO],
     orderIndex: 13,
+  },
+  {
+    slug: "education-physique",
+    name: "Éducation physique & sportive",
+    shortName: "EPS",
+    family: "Sciences",
+    icon: "🏅",
+    accent: "#B91C1C",
+    description:
+      "Spécialité sportive (coef. 3) : anatomie, biomécanique, physiologie de l'effort et épreuves pratiques, avec la préparation physique et la réglementation.",
+    sections: [SPO],
+    orderIndex: 14,
   },
 ];
