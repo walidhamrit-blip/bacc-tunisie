@@ -367,8 +367,13 @@ export default async function ProgramPage({
                 <div className="space-y-4">
                   {subject.themes.map((theme) => (
                     <div key={theme.slug}>
-                      <p className="mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+                      <p className="mb-2 flex flex-wrap items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
                         {theme.title}
+                        {theme.hours ? (
+                          <span className="badge badge-slate !text-[0.62rem] normal-case tracking-normal">
+                            {theme.hours}
+                          </span>
+                        ) : null}
                       </p>
                       <ul className="space-y-1.5">
                         {theme.chapters.map((chapter) => {
@@ -447,6 +452,11 @@ export default async function ProgramPage({
           <p>
             <strong className="text-[var(--ink)]">T1, T2, T3</strong> : le trimestre où le chapitre est enseigné et
             évalué. Le devoir de synthèse N°1 porte sur les chapitres T1, le N°2 sur T2, le N°3 sur T3.
+          </p>
+          <p>
+            <strong className="text-[var(--ink)]">Source</strong> : le découpage reprend les programmes officiels de la
+            Direction générale des programmes (4ème année secondaire) et la répartition annuelle publiée par section —
+            mathématiques, sciences physiques, SVT, informatique, technologie, économie-gestion, arabe, philosophie.
           </p>
           <p>
             <strong className="text-[var(--ink)]">Rév.</strong> : la période de juin, consacrée à la révision générale et
