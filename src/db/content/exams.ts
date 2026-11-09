@@ -852,4 +852,62 @@ export const examsSeed: ExamSeed[] = [
       "A clearly structured essay scores higher than a rich but disorganised one.",
     ],
   },
+  {
+    slug: "bac-TECHNOLOGIE-session",
+    title: "Épreuve de technologie — électronique, automatismes et électrotechnique",
+    subjectSlug: "technologie",
+    section: "Sciences techniques",
+    kind: "session",
+    year: 2024,
+    durationMin: 180,
+    difficulty: 3,
+    description:
+      "Une épreuve complète de technologie avec corrigé : logique combinatoire, GRAFCET, moteur asynchrone et résistance des matériaux.",
+    parts: [
+      {
+        title: "Partie A — Électronique numérique (7 points)",
+        questions: [
+          {
+            prompt: "Simplifier la fonction S = a·b̄ + a·b.",
+            method: "Factoriser par a, puis utiliser b̄ + b = 1.",
+            answer: "S = a·(b̄ + b) = a. La variable b est éliminée : le circuit ne dépend plus que de a.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie B — Automatismes (7 points)",
+        questions: [
+          {
+            prompt: "Dans un GRAFCET, à quelle condition la transition entre les étapes 3 et 4 est-elle franchie ?",
+            method: "Énoncer la règle d'évolution : transition valide ET condition vraie.",
+            answer:
+              "L'étape 3 doit être active et la condition associée à la transition doit être vraie ; alors l'étape 3 est désactivée et l'étape 4 activée simultanément.",
+            points: 7,
+          },
+        ],
+      },
+      {
+        title: "Partie C — Électrotechnique (6 points)",
+        questions: [
+          {
+            prompt: "Un moteur tétrapolaire alimenté en 50 Hz tourne à 1440 tr/min. Calculer son glissement.",
+            method: "Calculer d'abord ns = 60f/p, puis g = (ns − n)/ns.",
+            answer: "ns = 60 × 50/2 = 1500 tr/min ; g = (1500 − 1440)/1500 = 0,04 soit 4 %.",
+            points: 6,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Écrire la formule littérale avant tout calcul.",
+      "Vérifier les unités : tr/min, rad/s, N, mm², MPa.",
+      "Conclure chaque calcul par une phrase de réponse.",
+    ],
+    correctionNotes: [
+      "Une simplification sans justification (table de Karnaugh ou algèbre de Boole) n'est que partiellement créditée.",
+      "Le glissement s'exprime en % mais se calcule sans unité.",
+      "Un résultat numérique sans unité est systématiquement pénalisé.",
+    ],
+  },
 ];

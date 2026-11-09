@@ -13,6 +13,7 @@ import { physiqueChimieLessons } from "@/db/content/lessons-physique-ondes";
 import { chimieLessons } from "@/db/content/lessons-chimie";
 import { informatiqueCommunLessons } from "@/db/content/lessons-informatique-commun";
 import { svtExperimentalLessons } from "@/db/content/lessons-svt-experimental";
+import { technologieLessons } from "@/db/content/lessons-technologie";
 
 /**
  * Fiches complémentaires, organisées filière par filière pour couvrir
@@ -35,6 +36,7 @@ export const extraLessons: LessonSeed[] = [
   ...chimieLessons,
   ...svtLessons,
   ...svtExperimentalLessons,
+  ...technologieLessons,
   ...informatiqueCommunLessons,
   ...mementoLessons,
 ];

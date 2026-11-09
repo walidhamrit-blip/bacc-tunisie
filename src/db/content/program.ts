@@ -97,6 +97,7 @@ const MEMENTO: Record<string, string> = {
   anglais: "memento-anglais",
   informatique: "memento-informatique",
   svt: "memento-svt",
+  technologie: "memento-technologie",
 };
 
 /**
@@ -450,7 +451,7 @@ const MATHS_TEC = sub("mathematiques", "×3", [
   th("maths-analyse", "Analyse", [
     ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
     ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
-    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1", { lesson: "fonctions-reciproques" }),
     ch("maths-etude", "Étude de fonctions", "T2", { lesson: "etude-fonctions-complete" }),
     ch("maths-primitives", "Primitives", "T2", { lesson: "primitives-calcul" }),
     ch("maths-integrales", "Calcul intégral : intégration par parties et aires", "T3", {
@@ -460,7 +461,7 @@ const MATHS_TEC = sub("mathematiques", "×3", [
     ch("maths-exp", "Fonction exponentielle", "T3", { lesson: "fonction-exponentielle" }),
   ]),
   th("maths-geometrie", "Géométrie de l'espace", [
-    ch("maths-vecteurs-espace", "Calcul vectoriel : déterminant, vecteurs directeurs, points coplanaires", "T1"),
+    ch("maths-vecteurs-espace", "Calcul vectoriel : déterminant, vecteurs directeurs, points coplanaires", "T1", { lesson: "espace-droites-plans" }),
     ch("maths-droites-plans", "Intersections de droites et de plans dans l'espace", "T2", { lesson: "espace-droites-plans" }),
     ch("maths-produit-vectoriel", "Produit scalaire, produit vectoriel et produit mixte", "T2", { lesson: "espace-droites-plans" }),
     ch("maths-sphere", "Équations de droites, de plans et de sphères", "T2", { lesson: "espace-droites-plans" }),
@@ -504,7 +505,7 @@ const MATHS_ECO = sub("mathematiques", "×2", [
   th("maths-analyse", "Analyse", [
     ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
     ch("maths-derivation", "Dérivabilité et théorème des accroissements finis", "T1", { lesson: "derivabilite-taf" }),
-    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1"),
+    ch("maths-fonctions-reciproques", "Fonctions réciproques", "T1", { lesson: "fonctions-reciproques" }),
     ch("maths-primitives", "Primitives", "T1"),
     ch("maths-etude", "Étude de fonctions et optimisation", "T1", { lesson: "etude-fonctions-complete" }),
     ch("maths-ln", "Fonction logarithme népérien", "T2", { lesson: "fonction-logarithme" }),
@@ -782,26 +783,26 @@ const TECHNOLOGIE = sub(
       ch("tech-chaine", "Chaîne d'énergie et chaîne d'information d'un système", "T1", {
         lesson: "chaine-energie-information",
       }),
-      ch("tech-binaire", "Arithmétique binaire et codage de l'information", "T1"),
-      ch("tech-combinatoire", "Logique combinatoire : fonctions et simplification", "T1"),
-      ch("tech-sequentielle", "Logique séquentielle : bascules et compteurs", "T1"),
+      ch("tech-binaire", "Arithmétique binaire et codage de l'information", "T1", { lesson: "tech-arithmetique-binaire" }),
+      ch("tech-combinatoire", "Logique combinatoire : fonctions et simplification", "T1", { lesson: "tech-logique-combinatoire" }),
+      ch("tech-sequentielle", "Logique séquentielle : bascules et compteurs", "T1", { lesson: "tech-logique-sequentielle" }),
     ]),
     th("tech-automatismes", "Automatismes et énergie", [
-      ch("tech-grafcet", "GRAFCET et logique programmée", "T2"),
-      ch("tech-api", "Automates programmables (API) et microcontrôleurs", "T2"),
-      ch("tech-asservissement", "Asservissement et régulation", "T2"),
-      ch("tech-triphase", "Courants monophasé et triphasé", "T2"),
+      ch("tech-grafcet", "GRAFCET et logique programmée", "T2", { lesson: "tech-grafcet" }),
+      ch("tech-api", "Automates programmables (API) et microcontrôleurs", "T2", { lesson: "tech-api-microcontroleurs" }),
+      ch("tech-asservissement", "Asservissement et régulation", "T2", { lesson: "tech-asservissement" }),
+      ch("tech-triphase", "Courants monophasé et triphasé", "T2", { lesson: "tech-triphase" }),
     ]),
     th("tech-conversion", "Conversion d'énergie", [
-      ch("tech-transfo", "Le transformateur", "T3"),
-      ch("tech-moteur-async", "Le moteur asynchrone", "T3"),
-      ch("tech-moteur-cc", "Le moteur à courant continu", "T3"),
-      ch("tech-aop", "L'amplificateur opérationnel", "T3"),
+      ch("tech-transfo", "Le transformateur", "T3", { lesson: "tech-transformateur" }),
+      ch("tech-moteur-async", "Le moteur asynchrone", "T3", { lesson: "tech-moteur-asynchrone" }),
+      ch("tech-moteur-cc", "Le moteur à courant continu", "T3", { lesson: "tech-moteur-continu" }),
+      ch("tech-aop", "L'amplificateur opérationnel", "T3", { lesson: "tech-amplificateur-operationnel" }),
     ]),
     th("tech-mecanique", "Génie mécanique", [
-      ch("tech-liaisons", "Liaisons mécaniques et transmission de mouvement", "T2"),
-      ch("tech-cotation", "Cotation, tolérance et dessin technique", "T3"),
-      ch("tech-rdm", "Résistance des matériaux : contraintes et déformations", "T3"),
+      ch("tech-liaisons", "Liaisons mécaniques et transmission de mouvement", "T2", { lesson: "tech-liaisons-mecaniques" }),
+      ch("tech-cotation", "Cotation, tolérance et dessin technique", "T3", { lesson: "tech-cotation-dessin" }),
+      ch("tech-rdm", "Résistance des matériaux : contraintes et déformations", "T3", { lesson: "tech-rdm" }),
     ]),
   ],
   { specialty: true },
