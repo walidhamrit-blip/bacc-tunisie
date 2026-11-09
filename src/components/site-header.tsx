@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { FontSizeToggle } from "@/components/font-size-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_GROUPS, PRIMARY_NAV, isNavActive } from "@/lib/navigation";
 
@@ -79,6 +80,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="header-actions">
+            <FontSizeToggle />
             <ThemeToggle />
             <Link href="/mon-compte" className="header-account" aria-label="Mon compte">
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
