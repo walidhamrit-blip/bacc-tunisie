@@ -102,6 +102,7 @@ const MEMENTO: Record<string, string> = {
   gestion: "memento-gestion",
   "histoire-geographie": "memento-histoire-geographie",
   "education-islamique": "memento-education-islamique",
+  "education-physique": "memento-education-physique",
 };
 
 /**
@@ -359,17 +360,17 @@ const SPORT_SPECIALITE = sub(
   "×3",
   [
     th("sport-theorie", "Partie théorique · sciences du sport", [
-      ch("sport-anatomie", "Anatomie et physiologie de l'effort", "T1"),
-      ch("sport-biomecanique", "Biomécanique du mouvement sportif", "T1"),
-      ch("sport-physiologie", "Physiologie de l'entraînement, filières énergétiques et récupération", "T2"),
-      ch("sport-nutrition", "Nutrition, hydratation et préparation du sportif", "T2"),
-      ch("sport-pedagogie", "Pédagogie, didactique et animation sportive", "T3"),
-      ch("sport-reglement", "Réglementation, arbitrage et organisation des compétitions", "T3"),
-      ch("sport-sante", "Sport, santé et prévention des blessures", "T3"),
+      ch("sport-anatomie", "Anatomie et physiologie de l'effort", "T1", { lesson: "sport-anatomie-effort" }),
+      ch("sport-biomecanique", "Biomécanique du mouvement sportif", "T1", { lesson: "sport-biomecanique" }),
+      ch("sport-physiologie", "Physiologie de l'entraînement, filières énergétiques et récupération", "T2", { lesson: "sport-physiologie-entrainement" }),
+      ch("sport-nutrition", "Nutrition, hydratation et préparation du sportif", "T2", { lesson: "sport-nutrition-hydratation" }),
+      ch("sport-pedagogie", "Pédagogie, didactique et animation sportive", "T3", { lesson: "sport-pedagogie-didactique" }),
+      ch("sport-reglement", "Réglementation, arbitrage et organisation des compétitions", "T3", { lesson: "sport-reglementation-arbitrage" }),
+      ch("sport-sante", "Sport, santé et prévention des blessures", "T3", { lesson: "sport-sante-prevention" }),
     ]),
     th("sport-pratique", "Partie pratique · spécialité sportive", [
-      ch("sport-pratique-1", "Épreuve pratique : habiletés techniques de la discipline", "T2"),
-      ch("sport-pratique-2", "Épreuve pratique : situation de match et arbitrage", "T3"),
+      ch("sport-pratique-1", "Épreuve pratique : habiletés techniques de la discipline", "T2", { lesson: "sport-pratique-habilete" }),
+      ch("sport-pratique-2", "Épreuve pratique : situation de match et arbitrage", "T3", { lesson: "sport-pratique-match-arbitrage" }),
     ]),
   ],
   { specialty: true },
@@ -529,7 +530,7 @@ const MATHS_SPO = sub("mathematiques", "×1", [
   th("maths-analyse", "Analyse", [
     ch("maths-continuite", "Continuité et limites", "T1", { lesson: "continuite-tvi-bijection" }),
     ch("maths-derivation", "Dérivabilité et étude de fonctions", "T1", { lesson: "derivabilite-taf" }),
-    ch("maths-primitives", "Primitives et calcul intégral", "T2"),
+    ch("maths-primitives", "Primitives et calcul intégral", "T2", { lesson: "primitives-integrales" }),
     ch("maths-ln-exp", "Fonctions logarithme et exponentielle", "T2", { lesson: "fonction-logarithme" }),
   ]),
   th("maths-stats", "Suites, statistiques et probabilités", [
@@ -683,8 +684,8 @@ const PHYSIQUE_SPO = sub("physique", "×1", [
     }),
     ch("phys-mouvement", "Mouvement, forces et énergie", "T2", { lesson: "energie-mecanique-amortissement" }),
     ch("phys-ondes-meca", "Ondes et signal", "T3", { lesson: "ondes-mecaniques-periodiques" }),
-    ch("phys-oxydoreduction", "Oxydoréduction et piles", "T2"),
-    ch("phys-acides-bases", "Acides et bases", "T3"),
+    ch("phys-oxydoreduction", "Oxydoréduction et piles", "T2", { lesson: "phys-oxydoreduction-piles" }),
+    ch("phys-acides-bases", "Acides et bases", "T3", { lesson: "phys-acides-bases" }),
   ]),
 ]);
 
@@ -763,13 +764,13 @@ const SVT_SPO = sub(
         lesson: "genetique-transmission",
         quiz: "quiz-svt-genetique",
       }),
-      ch("svt-neuro-muscle", "Système nerveux, réflexe myotatique et muscle squelettique", "T2"),
+      ch("svt-neuro-muscle", "Système nerveux, réflexe myotatique et muscle squelettique", "T2", { lesson: "svt-neuro-muscle-sport" }),
       ch("svt-immunite", "Immunité et santé du sportif", "T3", {
         lesson: "immunologie",
         quiz: "quiz-svt-immunite",
       }),
-      ch("svt-metabolisme", "Métabolisme énergétique et adaptation à l'effort", "T3"),
-      ch("svt-nutrition", "Nutrition du sportif et équilibre alimentaire", "T3"),
+      ch("svt-metabolisme", "Métabolisme énergétique et adaptation à l'effort", "T3", { lesson: "svt-metabolisme-effort" }),
+      ch("svt-nutrition", "Nutrition du sportif et équilibre alimentaire", "T3", { lesson: "svt-nutrition-sportif" }),
     ]),
   ],
   { specialty: true },

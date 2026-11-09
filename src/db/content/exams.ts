@@ -1092,4 +1092,89 @@ export const examsSeed: ExamSeed[] = [
       "الربط بين المقاصد وقضية معاصرة هو جوهر الجزء الثاني.",
     ],
   },
+  {
+    slug: "bac-education-physique-session",
+    title: "Épreuve d'éducation physique — partie théorique et analyse de séance",
+    subjectSlug: "education-physique",
+    section: "Sport",
+    kind: "session",
+    year: 2024,
+    durationMin: 120,
+    difficulty: 3,
+    description:
+      "Sujet type bac Sport avec corrigé : physiologie de l'effort, biomécanique d'un geste et construction d'une séance d'entraînement.",
+    parts: [
+      {
+        title: "Exercice 1 — Physiologie de l'effort (7 points)",
+        intro:
+          "Un joueur de 17 ans dispute un match de football de 90 minutes. On relève sa fréquence cardiaque : 70 bpm au repos, 190 bpm lors d'un sprint.",
+        questions: [
+          {
+            prompt: "Estimer sa fréquence cardiaque maximale et situer son sprint sur le continuum énergétique.",
+            method: "Utiliser FC max ≈ 220 − âge, puis comparer la durée de l'effort aux trois filières.",
+            answer:
+              "FC max ≈ 220 − 17 = 203 bpm. Le sprint (quelques secondes) relève de la filière anaérobie alactique, relayée par la glycolyse pendant l'effort intense ; les phases de course modérée du match sollicitent la filière aérobie.",
+            points: 3,
+          },
+          {
+            prompt: "Expliquer deux adaptations de l'entraînement aérobie sur le plan cardio-respiratoire.",
+            method: "Citer une adaptation centrale (cœur) et une adaptation périphérique (muscle ou capillaires).",
+            answer:
+              "Au niveau central : augmentation du volume d'éjection systolique et bradycardie de repos, donc meilleur débit pour un coût cardiaque moindre. Au niveau périphérique : augmentation de la densité capillaire et du volume mitochondrial, ce qui améliore l'extraction de l'oxygène et retarde le recours à la glycolyse.",
+            points: 4,
+          },
+        ],
+      },
+      {
+        title: "Exercice 2 — Biomécanique (6 points)",
+        intro: "Analyse du tir au but : appui, armé du membre inférieur, frappe, accompagnement.",
+        questions: [
+          {
+            prompt: "Identifier le type de levier du genou lors de l'extension et justifier.",
+            method: "Repérer le point d'appui (articulation), la force (quadriceps) et la résistance (poids du segment).",
+            answer:
+              "Le genou fonctionne comme un levier de 3e genre : la force motrice du quadriceps s'applique entre le point d'appui (l'articulation) et la résistance (le poids du segment jambier). Le bras de levier est faible, mais la vitesse angulaire obtenue en fin d'extension est élevée, ce qui favorise la vitesse du ballon.",
+            points: 3,
+          },
+          {
+            prompt: "Proposer deux corrections techniques justifiées par la mécanique.",
+            method: "Relier chaque correction à une notion : base de sustentation, transfert de poids, bras de levier.",
+            answer:
+              "1) Élargir légèrement la base de sustentation et fléchir le genou d'appui pour abaisser le centre de gravité et stabiliser la frappe. 2) Accompagner le geste après le contact pour allonger le temps d'application de la force et augmenter la vitesse transmise au ballon.",
+            points: 3,
+          },
+        ],
+      },
+      {
+        title: "Exercice 3 — Pédagogie et prévention (7 points)",
+        intro: "Vous devez préparer une séance de 60 minutes pour un groupe de 16 élèves de niveau hétérogène.",
+        questions: [
+          {
+            prompt: "Construire le plan de la séance avec objectifs et critères de réussite.",
+            method: "Respecter les trois temps, formuler un objectif opérationnel mesurable.",
+            answer:
+              "Mise en train (10 min) : échauffement général puis spécifique. Corps de séance (40 min) : situation de référence, puis situation d'apprentissage sur l'obstacle visé, avec différenciation par la taille du terrain. Retour au calme (10 min) : étirements, bilan. Objectif opérationnel : réussir 8 passes sur 10 en mouvement avec un défenseur passif. Critère de réussite : 8/10 sur deux essais.",
+            points: 4,
+          },
+          {
+            prompt: "Citer trois mesures de prévention des blessures et expliquer la conduite à tenir devant une entorse.",
+            method: "Associer prévention (avant) et premiers gestes (après).",
+            answer:
+              "Prévention : échauffement complet, progressivité de la charge, matériel et terrain vérifiés. Devant une entorse : arrêt de l'activité, glace 15–20 minutes, compression, surélévation (RICE), puis avis médical avant reprise.",
+            points: 3,
+          },
+        ],
+      },
+    ],
+    advice: [
+      "Toujours nommer l'articulation, la force et le levier en biomécanique.",
+      "Appuyer chaque affirmation physiologique sur une valeur chiffrée.",
+      "Formuler les objectifs en comportement observable et mesurable.",
+    ],
+    correctionNotes: [
+      "Les valeurs de référence (FC max, zones, filières) sont attendues explicitement.",
+      "Une séance sans les trois temps ni critère de réussite perd la moitié des points.",
+      "La prévention doit être distinguée de la conduite à tenir.",
+    ],
+  },
 ];

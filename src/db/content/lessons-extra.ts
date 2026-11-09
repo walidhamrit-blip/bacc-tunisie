@@ -21,6 +21,9 @@ import { histoireGeoLettresLessons } from "@/db/content/lessons-histoire-geo-let
 import { arabeLettresLessons } from "@/db/content/lessons-arabe-lettres";
 import { philosophieLettresLessons } from "@/db/content/lessons-philosophie-lettres";
 import { lettresComplementsLessons } from "@/db/content/lessons-lettres-complements";
+import { educationPhysiqueLessons } from "@/db/content/lessons-education-physique";
+import { svtSportLessons } from "@/db/content/lessons-svt-sport";
+import { physiqueSportLessons } from "@/db/content/lessons-physique-sport";
 
 /**
  * Fiches complémentaires, organisées filière par filière pour couvrir
@@ -51,6 +54,9 @@ export const extraLessons: LessonSeed[] = [
   ...arabeLettresLessons,
   ...philosophieLettresLessons,
   ...lettresComplementsLessons,
+  ...educationPhysiqueLessons,
+  ...svtSportLessons,
+  ...physiqueSportLessons,
   ...informatiqueCommunLessons,
   ...mementoLessons,
 ];
